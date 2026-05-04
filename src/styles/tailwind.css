@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+:root {
+  --primary:       #4CAF50;
+  --primary-dark:  #2E7D32;
+  --primary-light: #A5D6A7;
+  --bg:            #F1F8F4;
+  --bg2:           #E8F5E9;
+  --accent:        #8BC34A;
+  --text:          #1B3A1F;
+  --muted:         #5C7A61;
+  --border:        #C8E6C9;
+  --card:          #FFFFFF;
+  --shadow-green:  0 4px 24px rgba(46,125,50,0.10);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.font-display { font-family: 'Playfair Display', serif; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 4px; }
+::selection { background: var(--primary-light); color: var(--primary-dark); }
+
+/* ── Green Gradient ── */
+.green-gradient { background: linear-gradient(135deg, #2E7D32 0%, #43A047 60%, #8BC34A 100%); }
+.green-gradient-soft { background: linear-gradient(135deg, #E8F5E9 0%, #F1F8F4 100%); }
+
+/* ── Glass ── */
+.glass {
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(200,230,201,0.5);
+}
+
+/* ── Recipe Card ── */
+.recipe-card {
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+  will-change: transform;
+}
+.recipe-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 16px 40px rgba(46,125,50,0.14);
+}
+
+/* ── Tab active bar ── */
+.tab-active-bar {
+  position: relative;
+}
+.tab-active-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 2.5px;
+  background: var(--primary-dark);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ── Star filled / empty ── */
+.star-on  { color: #F59E0B; }
+.star-off { color: #D1FAE5; }
+
+/* ── Keyframes ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes scaleIn {
+  from { opacity:0; transform:scale(0.96); }
+  to   { opacity:1; transform:scale(1); }
+}
+@keyframes float {
+  0%,100% { transform:translateY(0); }
+  50%      { transform:translateY(-8px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.anim-up   { animation: fadeUp   0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-in   { animation: fadeIn   0.4s ease both; }
+.anim-scale{ animation: scaleIn  0.4s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-float{ animation: float 3.5s ease-in-out infinite; }
+
+.d-0  { animation-delay: 0ms;   }
+.d-1  { animation-delay: 80ms;  }
+.d-2  { animation-delay: 160ms; }
+.d-3  { animation-delay: 240ms; }
+.d-4  { animation-delay: 320ms; }
+.d-5  { animation-delay: 400ms; }
+
+/* ── Skeleton shimmer ── */
+.skeleton {
+  background: linear-gradient(90deg, #E8F5E9 25%, #C8E6C9 50%, #E8F5E9 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* ── Input focus ring ── */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.18);
+}
+
+/* ── Bottom nav active dot ── */
+.bnav-active { color: var(--primary-dark); }
+.bnav-active span.dot { background: var(--primary); }
