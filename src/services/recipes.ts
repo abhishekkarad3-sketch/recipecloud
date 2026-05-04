@@ -21,10 +21,21 @@ export interface Recipe {
 
 export const CATEGORIES = ['All','Breakfast','Lunch','Dinner','Dessert','Snack','Vegan','Quick','Smoothie'];
 
-export async function uploadRecipeImage(file: File, _userId: string): Promise<string> {
+export async function uploadRecipeImage(file: File, userId: string): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: formData });
+  formData.append('userId', userId);
+  
+  const res = await fetch('/api/upload', { 
+    method: 'POST', 
+    body: formData 
+  });
+  
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Failed to upload image');
+  }
+  
   const data = await res.json();
   return data.url;
 }
@@ -91,6 +102,20 @@ export async function rateRecipe(recipeId: string, userId: string, rating: numbe
       users_who_rated: [...usersWhoRated, userId],
     })
     .eq('id', recipeId);
+
+  // Award points to user for rating
+  const { data: userData } = await supabase
+    .from('users')
+    .select('points')
+    .eq('id', userId)
+    .single();
+  
+  if (userData) {
+    await supabase
+      .from('users')
+      .update({ points: (userData.points || 0) + 1 })
+      .eq('id', userId);
+  }
 }
 
 export async function deleteRecipe(recipeId: string): Promise<void> {

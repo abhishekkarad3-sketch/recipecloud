@@ -55,30 +55,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleUserLogin = async (supabaseUser: User) => {
-    await upsertUser({
-      uid: supabaseUser.id,
-      name: supabaseUser.user_metadata.full_name || 'Chef',
-      email: supabaseUser.email || '',
-      photoURL: supabaseUser.user_metadata.avatar_url || '',
-    });
-    const data = await getUser(supabaseUser.id);
-    setAppUser(data);
-    setLoading(false);
+    try {
+      await upsertUser({
+        uid: supabaseUser.id,
+        name: supabaseUser.user_metadata?.full_name || 'Chef',
+        email: supabaseUser.email || '',
+        photoURL: supabaseUser.user_metadata?.avatar_url || '',
+      });
+      const data = await getUser(supabaseUser.id);
+      setAppUser(data);
+    } catch (error) {
+      console.error('Error during user login:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setAppUser(null);
+    try {
+      await supabase.auth.signOut();
+      setAppUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
   };
 
   return (

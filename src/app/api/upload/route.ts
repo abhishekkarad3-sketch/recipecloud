@@ -1,36 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { createClient } from '@/utils/supabase/server';
+
+const BUCKET_NAME = 'recipe-images';
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
+    const userId = formData.get('userId') as string;
 
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME!;
-    const apiKey = process.env.CLOUDINARY_API_KEY!;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET!;
-    const timestamp = Math.round(Date.now() / 1000);
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
 
-    const signature = crypto
-      .createHash('sha1')
-      .update(`folder=recipecloud&timestamp=${timestamp}${apiSecret}`)
-      .digest('hex');
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
 
-    const upload = new FormData();
-    upload.append('file', file);
-    upload.append('api_key', apiKey);
-    upload.append('timestamp', String(timestamp));
-    upload.append('signature', signature);
-    upload.append('folder', 'recipecloud');
+    const supabase = await createClient();
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: upload }
+    // Create unique file name
+    const timestamp = Date.now();
+    const fileName = `${userId}/${timestamp}-${file.name}`;
+
+    // Convert file to buffer
+    const buffer = await file.arrayBuffer();
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return NextResponse.json(
+        { error: `Upload failed: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(data.path);
+
+    return NextResponse.json({ url: urlData.publicUrl });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { error: 'Upload failed' },
+      { status: 500 }
     );
-    const data = await res.json();
-    return NextResponse.json({ url: data.secure_url });
-  } catch {
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }
