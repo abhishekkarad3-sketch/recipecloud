@@ -23,20 +23,20 @@ export default function RecipeCard({ recipe, size = 'md' }: Props) {
   const [justRated, setJustRated] = useState(false);
 
   const isFav   = appUser?.favorites?.includes(recipe.id!) ?? false;
-  const hasRated = user ? recipe.usersWhoRated?.includes(user.uid) ?? false : false;
+  const hasRated = user ? recipe.usersWhoRated?.includes(user.id) ?? false : false;
   const avg      = avgRating(recipe);
   const imgH     = size === 'sm' ? 'h-40' : 'h-52';
 
   const handleFav = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
-    await toggleFavorite(user.uid, recipe.id!, isFav);
+    await toggleFavorite(user.id, recipe.id!, isFav);
     await refreshUser();
   };
 
   const handleRate = async (stars: number) => {
     if (!user || hasRated || justRated) return;
-    await rateRecipe(recipe.id!, user.uid, stars);
+    await rateRecipe(recipe.id!, user.id, stars);
     setJustRated(true);
     setShowStars(false);
   };

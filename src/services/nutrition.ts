@@ -48,19 +48,19 @@ Return this exact JSON structure (numbers only, no units in number fields):
 }`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { response_mime_type: "application/json" }
       }),
     });
 
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
-    const text = data.content?.find((b: { type: string }) => b.type === 'text')?.text ?? '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     // Strip any accidental markdown fences
     const clean = text.replace(/```json|```/gi, '').trim();
     return JSON.parse(clean) as NutritionData;

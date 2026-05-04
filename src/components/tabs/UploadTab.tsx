@@ -51,7 +51,7 @@ export default function UploadTab() {
     setLoading(true); setStatus('idle');
     try {
       let imageUrl = '';
-      if (file) imageUrl = await uploadRecipeImage(file, user.uid);
+      if (file) imageUrl = await uploadRecipeImage(file, user.id);
       await addRecipe({
         name: form.name.trim(),
         ingredients: form.ingredients.split('\n').filter(Boolean),
@@ -60,7 +60,7 @@ export default function UploadTab() {
         category: form.category,
         difficulty: form.difficulty as Recipe['difficulty'],
         imageUrl,
-        authorId: user.uid,
+        authorId: user.id,
         authorName: appUser.name,
         nutrition: nutrition ?? undefined,
       });
@@ -68,7 +68,7 @@ export default function UploadTab() {
       setForm(INIT); setFile(null); setPreview(''); setNutrition(null);
       setStatus('ok'); setTimeout(() => setStatus('idle'), 5000);
     } catch {
-      setErrMsg('Upload failed. Please check your configuration.'); setStatus('err');
+      setErrMsg('Upload failed. Please check your Supabase and Cloudinary configuration.'); setStatus('err');
     }
     setLoading(false);
   };
