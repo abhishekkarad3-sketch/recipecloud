@@ -68,7 +68,7 @@ export default function UploadTab() {
       setForm(INIT); setFile(null); setPreview(''); setNutrition(null);
       setStatus('ok'); setTimeout(() => setStatus('idle'), 5000);
     } catch {
-      setErrMsg('Upload failed. Check your Firebase config.'); setStatus('err');
+      setErrMsg('Upload failed. Please check your configuration.'); setStatus('err');
     }
     setLoading(false);
   };

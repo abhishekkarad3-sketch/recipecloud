@@ -1,10 +1,4 @@
-import {
-  collection, addDoc, updateDoc, deleteDoc, doc,
-  getDoc, getDocs, query, orderBy, where,
-  onSnapshot, serverTimestamp, arrayUnion, increment,
-  Unsubscribe,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import type { NutritionData } from './nutrition';
 
 export interface Recipe {
@@ -18,7 +12,7 @@ export interface Recipe {
   imageUrl: string;
   authorId: string;
   authorName: string;
-  createdAt: unknown;
+  createdAt: string;
   ratingTotal: number;
   ratingCount: number;
   usersWhoRated: string[];
@@ -38,50 +32,159 @@ export async function uploadRecipeImage(file: File, _userId: string): Promise<st
 export async function addRecipe(
   recipe: Omit<Recipe, 'id'|'createdAt'|'ratingTotal'|'ratingCount'|'usersWhoRated'>
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, 'recipes'), {
-    ...recipe,
-    createdAt: serverTimestamp(),
-    ratingTotal: 0,
-    ratingCount: 0,
-    usersWhoRated: [],
-  });
-  await updateDoc(doc(db, 'users', recipe.authorId), { points: increment(10) });
-  return docRef.id;
+  const { data, error } = await supabase
+    .from('recipes')
+    .insert({
+      name: recipe.name,
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions,
+      cooking_time: recipe.cookingTime,
+      category: recipe.category,
+      difficulty: recipe.difficulty,
+      image_url: recipe.imageUrl,
+      author_id: recipe.authorId,
+      author_name: recipe.authorName,
+      rating_total: 0,
+      rating_count: 0,
+      users_who_rated: [],
+      nutrition: recipe.nutrition,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Increment user points
+  const { data: userData } = await supabase
+    .from('users')
+    .select('points')
+    .eq('id', recipe.authorId)
+    .single();
+  
+  if (userData) {
+    await supabase
+      .from('users')
+      .update({ points: (userData.points || 0) + 10 })
+      .eq('id', recipe.authorId);
+  }
+
+  return data.id;
 }
 
 export async function rateRecipe(recipeId: string, userId: string, rating: number): Promise<void> {
-  await updateDoc(doc(db, 'recipes', recipeId), {
-    ratingTotal: increment(rating),
-    ratingCount: increment(1),
-    usersWhoRated: arrayUnion(userId),
-  });
+  const { data: recipe } = await supabase
+    .from('recipes')
+    .select('rating_total, rating_count, users_who_rated')
+    .eq('id', recipeId)
+    .single();
+
+  if (!recipe) return;
+
+  const usersWhoRated = recipe.users_who_rated || [];
+  if (usersWhoRated.includes(userId)) return;
+
+  await supabase
+    .from('recipes')
+    .update({
+      rating_total: (recipe.rating_total || 0) + rating,
+      rating_count: (recipe.rating_count || 0) + 1,
+      users_who_rated: [...usersWhoRated, userId],
+    })
+    .eq('id', recipeId);
 }
 
 export async function deleteRecipe(recipeId: string): Promise<void> {
-  await deleteDoc(doc(db, 'recipes', recipeId));
+  await supabase.from('recipes').delete().eq('id', recipeId);
 }
 
 export async function getRecipe(recipeId: string): Promise<Recipe | null> {
-  const snap = await getDoc(doc(db, 'recipes', recipeId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Recipe;
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('id', recipeId)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    ingredients: data.ingredients,
+    instructions: data.instructions,
+    cookingTime: data.cooking_time,
+    category: data.category,
+    difficulty: data.difficulty,
+    imageUrl: data.image_url,
+    authorId: data.author_id,
+    authorName: data.author_name,
+    createdAt: data.created_at,
+    ratingTotal: data.rating_total,
+    ratingCount: data.rating_count,
+    usersWhoRated: data.users_who_rated || [],
+    nutrition: data.nutrition,
+  };
 }
 
-export function subscribeToRecipes(callback: (recipes: Recipe[]) => void): Unsubscribe {
-  const q = query(collection(db, 'recipes'), orderBy('createdAt', 'desc'));
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
-  });
+export function subscribeToRecipes(callback: (recipes: Recipe[]) => void) {
+  // Initial fetch
+  supabase
+    .from('recipes')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .then(({ data }) => {
+      if (data) {
+        callback(data.map(mapRecipe));
+      }
+    });
+
+  // Subscribe to changes
+  const channel = supabase
+    .channel('recipes_changes')
+    .on('postgres_changes', { event: '*', table: 'recipes', schema: 'public' }, async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (data) {
+        callback(data.map(mapRecipe));
+      }
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+function mapRecipe(data: any): Recipe {
+  return {
+    id: data.id,
+    name: data.name,
+    ingredients: data.ingredients,
+    instructions: data.instructions,
+    cookingTime: data.cooking_time,
+    category: data.category,
+    difficulty: data.difficulty,
+    imageUrl: data.image_url,
+    authorId: data.author_id,
+    authorName: data.author_name,
+    createdAt: data.created_at,
+    ratingTotal: data.rating_total,
+    ratingCount: data.rating_count,
+    usersWhoRated: data.users_who_rated || [],
+    nutrition: data.nutrition,
+  };
 }
 
 export async function getRecipesByAuthor(authorId: string): Promise<Recipe[]> {
-  const q = query(
-    collection(db, 'recipes'),
-    where('authorId', '==', authorId),
-    orderBy('createdAt', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('author_id', authorId)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return [];
+  return data.map(mapRecipe);
 }
 
 export function avgRating(recipe: Recipe): number {

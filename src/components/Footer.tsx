@@ -52,7 +52,7 @@ export default function Footer() {
           <span>© {new Date().getFullYear()} RecipeCloud. Built with ☁️ + 💚</span>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-[#4CAF50] rounded-full animate-pulse" />
-            <span>Live · Real-time updates via Firebase</span>
+            <span>Live · Real-time updates via Supabase</span>
           </div>
         </div>
       </div>

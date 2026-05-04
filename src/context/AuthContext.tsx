@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { upsertUser, getUser, AppUser } from '@/services/users';
 
 interface AuthContextType {
@@ -22,37 +22,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     if (user) {
-      const data = await getUser(user.uid);
+      const data = await getUser(user.id);
       setAppUser(data);
     }
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await upsertUser({
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Chef',
-          email: firebaseUser.email || '',
-          photoURL: firebaseUser.photoURL || '',
-        });
-        const data = await getUser(firebaseUser.uid);
-        setAppUser(data);
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        handleUserLogin(currentUser);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for changes on auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        await handleUserLogin(currentUser);
       } else {
         setAppUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsub;
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const handleUserLogin = async (supabaseUser: User) => {
+    await upsertUser({
+      uid: supabaseUser.id,
+      name: supabaseUser.user_metadata.full_name || 'Chef',
+      email: supabaseUser.email || '',
+      photoURL: supabaseUser.user_metadata.avatar_url || '',
+    });
+    const data = await getUser(supabaseUser.id);
+    setAppUser(data);
+    setLoading(false);
+  };
+
   const signInWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
   };
 
   const logout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     setAppUser(null);
   };
 

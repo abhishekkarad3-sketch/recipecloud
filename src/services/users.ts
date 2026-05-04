@@ -1,17 +1,4 @@
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  getDocs,
-  collection,
-  query,
-  orderBy,
-  limit,
-  arrayUnion,
-  arrayRemove,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 
 export interface AppUser {
   uid: string;
@@ -20,44 +7,103 @@ export interface AppUser {
   photoURL: string;
   points: number;
   favorites: string[];
-  createdAt?: unknown;
+  createdAt?: string;
 }
 
 // Create or update user doc on login
 export async function upsertUser(user: Omit<AppUser, 'points' | 'favorites'>): Promise<void> {
-  const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) {
-    await setDoc(userRef, {
-      ...user,
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.uid)
+    .single();
+
+  if (!existingUser) {
+    await supabase.from('users').insert({
+      id: user.uid,
+      name: user.name,
+      email: user.email,
+      photo_url: user.photoURL,
       points: 0,
       favorites: [],
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     });
   } else {
     // Update name/photo in case changed
-    await updateDoc(userRef, { name: user.name, photoURL: user.photoURL, email: user.email });
+    await supabase
+      .from('users')
+      .update({
+        name: user.name,
+        photo_url: user.photoURL,
+        email: user.email,
+      })
+      .eq('id', user.uid);
   }
 }
 
 // Get user
 export async function getUser(uid: string): Promise<AppUser | null> {
-  const snap = await getDoc(doc(db, 'users', uid));
-  if (!snap.exists()) return null;
-  return snap.data() as AppUser;
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', uid)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    uid: data.id,
+    name: data.name,
+    email: data.email,
+    photoURL: data.photo_url,
+    points: data.points,
+    favorites: data.favorites || [],
+    createdAt: data.created_at,
+  };
 }
 
 // Toggle favorite
 export async function toggleFavorite(uid: string, recipeId: string, isFav: boolean): Promise<void> {
-  const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, {
-    favorites: isFav ? arrayRemove(recipeId) : arrayUnion(recipeId),
-  });
+  const { data: user } = await supabase
+    .from('users')
+    .select('favorites')
+    .eq('id', uid)
+    .single();
+
+  if (!user) return;
+
+  let newFavorites = user.favorites || [];
+  if (isFav) {
+    newFavorites = newFavorites.filter((id: string) => id !== recipeId);
+  } else {
+    if (!newFavorites.includes(recipeId)) {
+      newFavorites.push(recipeId);
+    }
+  }
+
+  await supabase
+    .from('users')
+    .update({ favorites: newFavorites })
+    .eq('id', uid);
 }
 
 // Leaderboard
 export async function getLeaderboard(count = 10): Promise<AppUser[]> {
-  const q = query(collection(db, 'users'), orderBy('points', 'desc'), limit(count));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as AppUser);
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('points', { ascending: false })
+    .limit(count);
+
+  if (error || !data) return [];
+
+  return data.map((d) => ({
+    uid: d.id,
+    name: d.name,
+    email: d.email,
+    photoURL: d.photo_url,
+    points: d.points,
+    favorites: d.favorites || [],
+    createdAt: d.created_at,
+  }));
 }
