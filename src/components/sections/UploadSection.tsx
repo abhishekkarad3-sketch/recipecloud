@@ -50,7 +50,7 @@ export default function UploadSection() {
     try {
       let imageUrl = '';
       if (imageFile) {
-        imageUrl = await uploadRecipeImage(imageFile, user.uid);
+        imageUrl = await uploadRecipeImage(imageFile, user.id);
       }
       const recipe: Omit<Recipe, 'id' | 'createdAt' | 'ratingTotal' | 'ratingCount' | 'usersWhoRated'> = {
         name: form.name.trim(),
@@ -60,7 +60,7 @@ export default function UploadSection() {
         category: form.category,
         difficulty: form.difficulty,
         imageUrl,
-        authorId: user.uid,
+        authorId: user.id,
         authorName: appUser.name,
       };
       await addRecipe(recipe);

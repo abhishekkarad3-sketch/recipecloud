@@ -13,7 +13,7 @@ export default function ProfileSection() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    getRecipesByAuthor(user.uid).then((data) => {
+    getRecipesByAuthor(user.id).then((data) => {
       setMyRecipes(data);
       setLoading(false);
     });
@@ -57,10 +57,10 @@ export default function ProfileSection() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#E8F5E9] mb-8">
           <div className="flex items-center gap-5">
             <div className="relative">
-              {user.photoURL ? (
+              {user.user_metadata?.avatar_url ? (
                 <Image
-                  src={user.photoURL}
-                  alt={user.displayName || ''}
+                  src={user.user_metadata.avatar_url}
+                  alt={user.user_metadata.full_name || ''}
                   width={80}
                   height={80}
                   className="rounded-full ring-4 ring-[#A5D6A7]"

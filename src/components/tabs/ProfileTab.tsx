@@ -20,7 +20,7 @@ export default function ProfileTab() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    getRecipesByAuthor(user.uid).then(data => { setMyRecipes(data); setLoading(false); });
+    getRecipesByAuthor(user.id).then(data => { setMyRecipes(data); setLoading(false); });
   }, [user]);
 
   const handleDelete = async (id: string) => {
@@ -53,8 +53,8 @@ export default function ProfileTab() {
         {/* Green banner */}
         <div className="green-gradient h-20 relative">
           <div className="absolute -bottom-8 left-6">
-            {user.photoURL ? (
-              <Image src={user.photoURL} alt="" width={64} height={64}
+            {user.user_metadata?.avatar_url ? (
+              <Image src={user.user_metadata.avatar_url} alt="" width={64} height={64}
                 className="rounded-2xl ring-4 ring-white shadow-lg" unoptimized />
             ) : (
               <div className="w-16 h-16 green-gradient rounded-2xl ring-4 ring-white flex items-center justify-center text-2xl font-bold text-white shadow-lg">

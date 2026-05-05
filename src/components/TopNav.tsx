@@ -149,16 +149,16 @@ export default function TopNav({ activeTab, setTab }: Props) {
               <div className="flex items-center gap-3 pl-1">
                 <div className="hidden sm:flex flex-col items-end">
                   <span className="text-sm font-bold text-[#2E7D32] dark:text-[#A5D6A7] leading-none">
-                    {user.displayName}
+                    {user.user_metadata?.full_name}
                   </span>
                   <span className="text-[10px] text-[#5C7A61] dark:text-[#9DB5A3] mt-1">
                     Chef Member
                   </span>
                 </div>
-                {user.photoURL && (
+                {user.user_metadata?.avatar_url && (
                   <Image
-                    src={user.photoURL}
-                    alt={user.displayName || 'User'}
+                    src={user.user_metadata.avatar_url}
+                    alt={user.user_metadata.full_name || 'User'}
                     width={36}
                     height={36}
                     className="rounded-full border-2 border-[#4CAF50] p-0.5"
