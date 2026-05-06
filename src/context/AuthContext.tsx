@@ -9,6 +9,8 @@ interface AuthContextType {
   appUser: AppUser | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -86,6 +88,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+      if (error) throw error;
+      if (data.user) {
+        await handleUserLogin(data.user);
+      }
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw error;
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      if (data.user) {
+        await handleUserLogin(data.user);
+      }
+    } catch (error) {
+      console.error('Error signing in:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -97,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, appUser, loading, signInWithGoogle, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, appUser, loading, signInWithGoogle, signUp, signIn, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
