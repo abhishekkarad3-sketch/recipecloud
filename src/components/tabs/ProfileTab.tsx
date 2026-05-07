@@ -16,12 +16,80 @@ export default function ProfileTab() {
   const [tab, setTab] = useState<Tab>('recipes');
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<string|null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    bio: '',
+    gender: '',
+  });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
     getRecipesByAuthor(user.id).then(data => { setMyRecipes(data); setLoading(false); });
   }, [user]);
+
+  useEffect(() => {
+    if (appUser && isEditingProfile) {
+      setEditFormData({
+        name: appUser.name || '',
+        bio: appUser.bio || '',
+        gender: appUser.gender || '',
+      });
+      setAvatarPreview(appUser.avatarUrl || user?.user_metadata?.avatar_url || '');
+    }
+  }, [isEditingProfile, appUser, user]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      let avatarUrl = appUser?.avatarUrl;
+      
+      // Upload avatar if changed
+      if (avatarFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', avatarFile);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        const uploadData = await uploadRes.json();
+        avatarUrl = uploadData.url;
+      }
+
+      const { updateUserProfile } = await import('@/services/users');
+      await updateUserProfile(user.id, {
+        name: editFormData.name,
+        bio: editFormData.bio,
+        gender: editFormData.gender,
+        avatarUrl,
+      });
+
+      await refreshUser();
+      setIsEditingProfile(false);
+      setAvatarFile(null);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this recipe?')) return;
@@ -69,12 +137,92 @@ export default function ProfileTab() {
             <div>
               <h3 className="font-display text-xl font-bold text-[#1B3A1F]">{appUser.name}</h3>
               <p className="text-sm text-[#5C7A61]">{appUser.email}</p>
+              {appUser.gender && <p className="text-xs text-[#5C7A61] mt-1">👤 {appUser.gender}</p>}
+              {appUser.bio && <p className="text-sm text-[#5C7A61] mt-2 italic">"{appUser.bio}"</p>}
             </div>
             <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">
               <Trophy size={14} className="text-amber-500" />
               <span className="text-sm font-bold text-amber-600">{appUser.points} pts</span>
             </div>
           </div>
+
+          {!isEditingProfile && (
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="mt-4 w-full bg-[#4CAF50] text-white py-2 rounded-lg hover:bg-[#45a049] font-semibold text-sm"
+            >
+              ✏️ Edit Profile
+            </button>
+          )}
+
+          {isEditingProfile && (
+            <div className="mt-4 space-y-4 bg-[#F1F8F4] p-4 rounded-xl border border-[#E8F5E9]">
+              {/* Avatar Upload */}
+              <div>
+                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Avatar</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="w-full border border-[#E8F5E9] rounded-lg p-2"
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Name</label>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="w-full border border-[#E8F5E9] rounded-lg p-2"
+                />
+              </div>
+
+              {/* Gender Selection */}
+              <div>
+                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Gender</label>
+                <select
+                  value={editFormData.gender}
+                  onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                  className="w-full border border-[#E8F5E9] rounded-lg p-2"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Transgender">Transgender</option>
+                </select>
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Bio/About</label>
+                <textarea
+                  value={editFormData.bio}
+                  onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                  placeholder="Tell us about yourself..."
+                  className="w-full border border-[#E8F5E9] rounded-lg p-2 h-20 resize-none"
+                />
+              </div>
+
+              {/* Save/Cancel */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="flex-1 bg-[#4CAF50] text-white py-2 rounded-lg hover:bg-[#45a049] disabled:opacity-50 font-semibold text-sm"
+                >
+                  {savingProfile ? 'Saving...' : '✓ Save Profile'}
+                </button>
+                <button
+                  onClick={() => setIsEditingProfile(false)}
+                  className="flex-1 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 font-semibold text-sm"
+                >
+                  ✕ Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Stats row */}
           <div className="grid grid-cols-3 gap-3 mt-5">
