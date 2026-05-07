@@ -1,23 +1,17 @@
-import { createClient } from '@/utils/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
 
   if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host');
-      const proto = request.headers.get('x-forwarded-proto');
-      const host = forwardedHost || request.headers.get('host');
-      const redirectUrl = proto ? `${proto}://${host}${next}` : next;
-      return NextResponse.redirect(redirectUrl);
-    }
+    await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${request.nextUrl.origin}/auth-error`);
+  // Redirect to home page on success
+  return NextResponse.redirect(
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://recipecloud1.onrender.com'
+  );
 }
