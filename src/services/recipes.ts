@@ -5,7 +5,7 @@ export interface Recipe {
   id?: string;
   name: string;
   ingredients: string[];
-  instructions: string;
+  instructions: string | string[];
   cookingTime: number;
   category: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -17,6 +17,7 @@ export interface Recipe {
   ratingCount: number;
   usersWhoRated: string[];
   nutrition?: NutritionData;
+  dietaryType?: 'veg' | 'non-veg' | 'vegan';
 }
 
 export const CATEGORIES = ['All','Breakfast','Lunch','Dinner','Dessert','Snack','Vegan','Quick','Smoothie'];
@@ -59,6 +60,7 @@ export async function addRecipe(
       rating_count: 0,
       users_who_rated: [],
       nutrition: recipe.nutrition,
+      dietary_type: recipe.dietaryType || 'veg',
     })
     .select()
     .single();
@@ -147,6 +149,7 @@ export async function getRecipe(recipeId: string): Promise<Recipe | null> {
     ratingCount: data.rating_count,
     usersWhoRated: data.users_who_rated || [],
     nutrition: data.nutrition,
+    dietaryType: data.dietary_type || 'veg',
   };
 }
 
@@ -198,6 +201,7 @@ function mapRecipe(data: any): Recipe {
     ratingCount: data.rating_count,
     usersWhoRated: data.users_who_rated || [],
     nutrition: data.nutrition,
+    dietaryType: data.dietary_type || 'veg',
   };
 }
 

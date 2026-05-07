@@ -7,7 +7,7 @@ import { toggleFavorite } from '@/services/users';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 
-interface Props { recipe: Recipe; size?: 'sm' | 'md'; }
+interface Props { recipe: Recipe; size?: 'sm' | 'md'; onViewDetails?: (recipe: Recipe) => void; }
 
 const DIFF: Record<string, string> = {
   Easy:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -15,7 +15,7 @@ const DIFF: Record<string, string> = {
   Hard:   'bg-red-100     text-red-600     dark:bg-red-900/30     dark:text-red-400',
 };
 
-export default function RecipeCard({ recipe, size = 'md' }: Props) {
+export default function RecipeCard({ recipe, size = 'md', onViewDetails }: Props) {
   const { user, appUser, refreshUser } = useAuth();
   const { t } = useLang();
   const [showStars, setShowStars] = useState(false);
@@ -42,7 +42,10 @@ export default function RecipeCard({ recipe, size = 'md' }: Props) {
   };
 
   return (
-    <div className="recipe-card bg-white dark:bg-[#1B2A1F] rounded-3xl overflow-hidden border border-[#E8F5E9] dark:border-[#2E7D32] shadow-sm group hover:shadow-xl hover:shadow-green-900/5 transition-all">
+    <div 
+      onClick={() => onViewDetails?.(recipe)}
+      className="recipe-card bg-white dark:bg-[#1B2A1F] rounded-3xl overflow-hidden border border-[#E8F5E9] dark:border-[#2E7D32] shadow-sm group hover:shadow-xl hover:shadow-green-900/5 transition-all cursor-pointer"
+    >
       {/* Image */}
       <div className={`relative ${imgH} bg-[#F1F8F4] dark:bg-[#2E3D2F] overflow-hidden`}>
         {recipe.imageUrl ? (

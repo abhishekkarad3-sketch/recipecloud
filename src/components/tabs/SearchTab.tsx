@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, SlidersHorizontal, X, Clock, Flame } from 'lucide-react';
 import RecipeCard from '@/components/RecipeCard';
+import RecipeDetailModal from '@/components/RecipeDetailModal';
 import { useLang } from '@/context/LangContext';
 import { Recipe, subscribeToRecipes, CATEGORIES } from '@/services/recipes';
 
@@ -18,6 +19,7 @@ export default function SearchTab() {
   const [maxTime, setMaxTime]   = useState(120);
   const [sort, setSort]         = useState<Sort>('newest');
   const [showFilter, setShowFilter] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToRecipes(data => { setAll(data); setLoading(false); });
@@ -180,10 +182,14 @@ export default function SearchTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {results.map((r, i) => (
             <div key={r.id} className={`anim-up d-${Math.min(i % 6, 5)}`}>
-              <RecipeCard recipe={r} />
+              <RecipeCard recipe={r} onViewDetails={setSelectedRecipe} />
             </div>
           ))}
         </div>
+      )}
+
+      {selectedRecipe && (
+        <RecipeDetailModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
       )}
     </div>
   );
