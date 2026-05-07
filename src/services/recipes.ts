@@ -18,6 +18,7 @@ export interface Recipe {
   usersWhoRated: string[];
   nutrition?: NutritionData;
   dietaryType?: 'veg' | 'non-veg' | 'vegan';
+  updatedAt?: string;
 }
 
 export const CATEGORIES = ['All','Breakfast','Lunch','Dinner','Dessert','Snack','Vegan','Quick','Smoothie'];
@@ -150,6 +151,7 @@ export async function getRecipe(recipeId: string): Promise<Recipe | null> {
     usersWhoRated: data.users_who_rated || [],
     nutrition: data.nutrition,
     dietaryType: data.dietary_type || 'veg',
+    updatedAt: data.updated_at,
   };
 }
 
@@ -213,6 +215,7 @@ function mapRecipe(data: any): Recipe {
     usersWhoRated: data.users_who_rated || [],
     nutrition: data.nutrition,
     dietaryType: data.dietary_type || 'veg',
+    updatedAt: data.updated_at,
   };
 }
 

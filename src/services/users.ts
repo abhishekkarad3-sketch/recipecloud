@@ -143,7 +143,25 @@ export async function getLeaderboard(count = 10): Promise<AppUser[]> {
 
   if (error || !data) return [];
 
-  return data.map((d) => ({
+  return data.map(mapUser);
+}
+
+// Search users
+export async function searchUsers(query: string): Promise<AppUser[]> {
+  if (!query.trim()) return [];
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+    .limit(20);
+
+  if (error || !data) return [];
+  return data.map(mapUser);
+}
+
+function mapUser(d: any): AppUser {
+  return {
     uid: d.id,
     name: d.name,
     email: d.email,
@@ -154,5 +172,5 @@ export async function getLeaderboard(count = 10): Promise<AppUser[]> {
     gender: d.gender,
     bio: d.bio,
     avatarUrl: d.avatar_url,
-  }));
+  };
 }

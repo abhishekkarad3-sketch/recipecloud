@@ -5,6 +5,10 @@ import RecipeCard from '@/components/RecipeCard';
 import RecipeDetailModal from '@/components/RecipeDetailModal';
 import { useLang } from '@/context/LangContext';
 import { Recipe, subscribeToRecipes, CATEGORIES } from '@/services/recipes';
+import { AppUser, searchUsers } from '@/services/users';
+import UserProfileModal from '@/components/UserProfileModal';
+import Image from 'next/image';
+import { User } from 'lucide-react';
 
 type Sort = 'newest' | 'top';
 const DIFFS = ['All', 'Easy', 'Medium', 'Hard'];
@@ -20,11 +24,26 @@ export default function SearchTab() {
   const [sort, setSort]         = useState<Sort>('newest');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToRecipes(data => { setAll(data); setLoading(false); });
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (query.trim().length > 1) {
+      setSearchingUsers(true);
+      searchUsers(query).then(data => {
+        setUsers(data);
+        setSearchingUsers(false);
+      });
+    } else {
+      setUsers([]);
+    }
+  }, [query]);
 
   const results = useMemo(() => {
     let list = [...all];
@@ -147,6 +166,38 @@ export default function SearchTab() {
         </div>
       )}
 
+      {/* Users Section */}
+      {users.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-bold text-[#1B3A1F] flex items-center gap-2">
+            <User size={18} className="text-[#4CAF50]" /> Users
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {users.map(u => (
+              <button 
+                key={u.uid}
+                onClick={() => setSelectedUser(u)}
+                className="flex-shrink-0 flex items-center gap-3 bg-white border border-[#E8F5E9] rounded-2xl p-3 hover:border-[#4CAF50] transition-all shadow-sm"
+              >
+                <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-[#E8F5E9]">
+                  {u.avatarUrl || u.photoURL ? (
+                    <Image src={u.avatarUrl || u.photoURL} alt={u.name} fill className="object-cover" unoptimized />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-bold text-[#4CAF50]">
+                      {u.name[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-bold text-[#1B3A1F] line-clamp-1">{u.name}</div>
+                  <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">{u.points} pts</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Results header */}
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold text-[#1B3A1F]">
@@ -190,6 +241,10 @@ export default function SearchTab() {
 
       {selectedRecipe && (
         <RecipeDetailModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+      )}
+
+      {selectedUser && (
+        <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   );

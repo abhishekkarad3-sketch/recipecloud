@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
-import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating } from '@/services/recipes';
+import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating, updateRecipe, uploadRecipeImage, CATEGORIES } from '@/services/recipes';
 import NutritionPanel from '@/components/NutritionPanel';
 import { parseLinksInText } from '@/utils/linkParser';
 
@@ -26,6 +26,11 @@ export default function ProfileTab() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [recipeFormData, setRecipeFormData] = useState<Partial<Recipe>>({});
+  const [recipeImageFile, setRecipeImageFile] = useState<File | null>(null);
+  const [recipeImagePreview, setRecipeImagePreview] = useState('');
+  const [savingRecipe, setSavingRecipe] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -96,6 +101,64 @@ export default function ProfileTab() {
     if (!confirm('Delete this recipe?')) return;
     await deleteRecipe(id);
     setMyRecipes(prev => prev.filter(r => r.id !== id));
+  };
+
+  const startEditRecipe = (recipe: Recipe) => {
+    setEditingRecipe(recipe);
+    setRecipeFormData({
+      name: recipe.name,
+      ingredients: [...recipe.ingredients],
+      instructions: Array.isArray(recipe.instructions) ? [...recipe.instructions] : [recipe.instructions],
+      cookingTime: recipe.cookingTime,
+      category: recipe.category,
+      difficulty: recipe.difficulty,
+      dietaryType: recipe.dietaryType,
+    });
+    setRecipeImagePreview(recipe.imageUrl);
+    setRecipeImageFile(null);
+  };
+
+  const handleRecipeImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setRecipeImageFile(file);
+      setRecipeImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!editingRecipe || !user) return;
+    setSavingRecipe(true);
+    try {
+      let imageUrl = editingRecipe.imageUrl;
+      if (recipeImageFile) {
+        imageUrl = await uploadRecipeImage(recipeImageFile, user.id);
+      }
+
+      const updates = {
+        ...recipeFormData,
+        image_url: imageUrl,
+        updated_at: new Date().toISOString(),
+        // Map camelCase to snake_case for DB
+        cooking_time: recipeFormData.cookingTime,
+        dietary_type: recipeFormData.dietaryType,
+      };
+      
+      // Remove camelCase fields before sending to Supabase
+      delete (updates as any).cookingTime;
+      delete (updates as any).dietaryType;
+
+      await updateRecipe(editingRecipe.id!, updates);
+      
+      // Refresh recipes
+      const updatedRecipes = await getRecipesByAuthor(user.id);
+      setMyRecipes(updatedRecipes);
+      setEditingRecipe(null);
+    } catch (error) {
+      console.error('Error updating recipe:', error);
+    } finally {
+      setSavingRecipe(false);
+    }
   };
 
   if (!user || !appUser) return (
@@ -275,6 +338,81 @@ export default function ProfileTab() {
         ))}
       </div>
 
+      {/* Edit Recipe Modal */}
+      {editingRecipe && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#121A14] w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-[#E8F5E9] flex justify-between items-center">
+              <h3 className="text-xl font-bold text-[#1B3A1F]">Edit Recipe</h3>
+              <button onClick={() => setEditingRecipe(null)}><X size={20} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Image Edit */}
+              <div className="relative h-40 bg-gray-100 rounded-2xl overflow-hidden group">
+                <Image src={recipeImagePreview} alt="" fill className="object-cover" unoptimized />
+                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                  <span className="text-white font-bold">Change Photo</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleRecipeImageChange} />
+                </label>
+              </div>
+
+              <input 
+                value={recipeFormData.name} 
+                onChange={e => setRecipeFormData({...recipeFormData, name: e.target.value})}
+                className="w-full p-3 border border-[#E8F5E9] rounded-xl"
+                placeholder="Recipe Name"
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <select 
+                  value={recipeFormData.category} 
+                  onChange={e => setRecipeFormData({...recipeFormData, category: e.target.value})}
+                  className="p-3 border border-[#E8F5E9] rounded-xl"
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input 
+                  type="number" 
+                  value={recipeFormData.cookingTime} 
+                  onChange={e => setRecipeFormData({...recipeFormData, cookingTime: +e.target.value})}
+                  className="p-3 border border-[#E8F5E9] rounded-xl"
+                  placeholder="Time (min)"
+                />
+              </div>
+
+              <textarea 
+                value={recipeFormData.ingredients?.join('\n')} 
+                onChange={e => setRecipeFormData({...recipeFormData, ingredients: e.target.value.split('\n')})}
+                className="w-full p-3 border border-[#E8F5E9] rounded-xl h-32"
+                placeholder="Ingredients (one per line)"
+              />
+
+              <textarea 
+                value={Array.isArray(recipeFormData.instructions) ? recipeFormData.instructions.join('\n') : recipeFormData.instructions} 
+                onChange={e => setRecipeFormData({...recipeFormData, instructions: e.target.value.split('\n')})}
+                className="w-full p-3 border border-[#E8F5E9] rounded-xl h-32"
+                placeholder="Instructions (one per line)"
+              />
+            </div>
+            <div className="p-6 border-t border-[#E8F5E9] flex gap-3">
+              <button 
+                onClick={handleSaveRecipe}
+                disabled={savingRecipe}
+                className="flex-1 bg-[#4CAF50] text-white py-3 rounded-xl font-bold disabled:opacity-50"
+              >
+                {savingRecipe ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button 
+                onClick={() => setEditingRecipe(null)}
+                className="flex-1 bg-gray-100 text-[#5C7A61] py-3 rounded-xl font-bold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       {tab === 'recipes' && (
         loading ? (
@@ -306,6 +444,10 @@ export default function ProfileTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => startEditRecipe(recipe)}
+                      className="text-xs font-semibold text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+                      ✏️ Edit
+                    </button>
                     {recipe.nutrition && (
                       <button onClick={() => setExpanded(expanded === recipe.id ? null : recipe.id!)}
                         className="text-xs font-semibold text-[#4CAF50] bg-[#E8F5E9] px-3 py-1.5 rounded-lg hover:bg-[#C8E6C9] transition-colors">
@@ -318,9 +460,14 @@ export default function ProfileTab() {
                     </button>
                   </div>
                 </div>
-                {expanded === recipe.id && recipe.nutrition && (
-                  <div className="px-5 pb-5 anim-scale">
-                    <NutritionPanel data={recipe.nutrition} perServing />
+                {expanded === recipe.id && (
+                  <div className="px-5 pb-5 anim-scale space-y-4">
+                    {recipe.nutrition && <NutritionPanel data={recipe.nutrition} perServing />}
+                    {recipe.updatedAt && (
+                      <p className="text-[10px] text-[#5C7A61] font-medium italic">
+                        Updated at: {new Date(recipe.updatedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
