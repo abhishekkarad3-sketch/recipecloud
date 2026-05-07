@@ -6,21 +6,41 @@ import { addRecipe, uploadRecipeImage, CATEGORIES, Recipe } from '@/services/rec
 
 type FormData = {
   name: string;
-  ingredients: string;
-  instructions: string;
+  ingredients: string[];
+  instructions: string[];
   cookingTime: number;
   category: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  dietaryType: 'veg' | 'non-veg' | 'vegan';
 };
 
 const INITIAL: FormData = {
   name: '',
-  ingredients: '',
-  instructions: '',
+  ingredients: [],
+  instructions: [],
   cookingTime: 30,
   category: 'Dinner',
   difficulty: 'Easy',
+  dietaryType: 'veg',
 };
+
+const CATEGORY_EMOJIS: Record<string, string> = {
+  'All': '🍽️',
+  'Breakfast': '🍳',
+  'Lunch': '🥙',
+  'Dinner': '🍽️',
+  'Dessert': '🍰',
+  'Snack': '🍪',
+  'Vegan': '🌱',
+  'Quick': '⚡',
+  'Smoothie': '🥤',
+};
+
+const DIETARY_OPTIONS = [
+  { value: 'veg', label: 'Vegetarian', emoji: '🥬' },
+  { value: 'non-veg', label: 'Non-Vegetarian', emoji: '🍗' },
+  { value: 'vegan', label: 'Vegan', emoji: '🌱' },
+];
 
 export default function UploadSection() {
   const { user, appUser, refreshUser, signInWithGoogle } = useAuth();
@@ -39,9 +59,37 @@ export default function UploadSection() {
     setPreview(URL.createObjectURL(file));
   };
 
+  const handleAddIngredient = () => {
+    setForm({ ...form, ingredients: [...form.ingredients, ''] });
+  };
+
+  const handleRemoveIngredient = (idx: number) => {
+    setForm({ ...form, ingredients: form.ingredients.filter((_, i) => i !== idx) });
+  };
+
+  const handleUpdateIngredient = (idx: number, value: string) => {
+    const newIngredients = [...form.ingredients];
+    newIngredients[idx] = value;
+    setForm({ ...form, ingredients: newIngredients });
+  };
+
+  const handleAddInstruction = () => {
+    setForm({ ...form, instructions: [...form.instructions, ''] });
+  };
+
+  const handleRemoveInstruction = (idx: number) => {
+    setForm({ ...form, instructions: form.instructions.filter((_, i) => i !== idx) });
+  };
+
+  const handleUpdateInstruction = (idx: number, value: string) => {
+    const newInstructions = [...form.instructions];
+    newInstructions[idx] = value;
+    setForm({ ...form, instructions: newInstructions });
+  };
+
   const handleSubmit = async () => {
     if (!user || !appUser) return;
-    if (!form.name.trim() || !form.ingredients.trim() || !form.instructions.trim()) {
+    if (!form.name.trim() || form.ingredients.some(i => !i.trim()) || form.instructions.some(i => !i.trim())) {
       setError('Please fill all required fields.');
       return;
     }
@@ -54,14 +102,15 @@ export default function UploadSection() {
       }
       const recipe: Omit<Recipe, 'id' | 'createdAt' | 'ratingTotal' | 'ratingCount' | 'usersWhoRated'> = {
         name: form.name.trim(),
-        ingredients: form.ingredients.split('\n').filter(Boolean),
-        instructions: form.instructions.trim(),
+        ingredients: form.ingredients.filter(i => i.trim()),
+        instructions: form.instructions.filter(i => i.trim()),
         cookingTime: form.cookingTime,
         category: form.category,
         difficulty: form.difficulty,
         imageUrl,
         authorId: user.id,
         authorName: appUser.name,
+        dietaryType: form.dietaryType,
       };
       await addRecipe(recipe);
       await refreshUser();
@@ -146,8 +195,8 @@ export default function UploadSection() {
             />
           </div>
 
-          {/* Row: category, difficulty, time */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Row: category, difficulty, time, dietary */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-[#2E7D32] mb-1.5">Category</label>
               <select
@@ -155,7 +204,9 @@ export default function UploadSection() {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="w-full bg-white border border-[#C8E6C9] rounded-xl px-3 py-3 text-sm text-[#1B3A1F]"
               >
-                {CATEGORIES.filter((c) => c !== 'All').map((c) => <option key={c}>{c}</option>)}
+                {CATEGORIES.filter((c) => c !== 'All').map((c) => (
+                  <option key={c}>{`${CATEGORY_EMOJIS[c] || '🍽️'} ${c}`}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -168,6 +219,9 @@ export default function UploadSection() {
                 {['Easy', 'Medium', 'Hard'].map((d) => <option key={d}>{d}</option>)}
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-[#2E7D32] mb-1.5">Cook Time (min)</label>
               <input
@@ -179,32 +233,104 @@ export default function UploadSection() {
                 className="w-full bg-white border border-[#C8E6C9] rounded-xl px-3 py-3 text-sm text-[#1B3A1F]"
               />
             </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#2E7D32] mb-1.5">Dietary Type</label>
+              <select
+                value={form.dietaryType}
+                onChange={(e) => setForm({ ...form, dietaryType: e.target.value as 'veg' | 'non-veg' | 'vegan' })}
+                className="w-full bg-white border border-[#C8E6C9] rounded-xl px-3 py-3 text-sm text-[#1B3A1F]"
+              >
+                {DIETARY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{`${opt.emoji} ${opt.label}`}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Ingredients */}
+          {/* Ingredients - Step by step */}
           <div>
-            <label className="block text-sm font-semibold text-[#2E7D32] mb-1.5">
-              Ingredients * <span className="font-normal text-[#5C7A61]">(one per line)</span>
-            </label>
-            <textarea
-              value={form.ingredients}
-              onChange={(e) => setForm({ ...form, ingredients: e.target.value })}
-              placeholder={"2 cups flour\n1 tsp salt\n3 eggs"}
-              rows={5}
-              className="w-full bg-white border border-[#C8E6C9] rounded-xl px-4 py-3 text-sm text-[#1B3A1F] resize-none"
-            />
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-semibold text-[#2E7D32]">Ingredients *</label>
+              <button
+                type="button"
+                onClick={handleAddIngredient}
+                className="text-xs bg-[#4CAF50] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#2E7D32] transition-colors"
+              >
+                + Add Ingredient
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.ingredients.length === 0 ? (
+                <div className="text-center py-4 border-2 border-dashed border-[#C8E6C9] rounded-xl">
+                  <p className="text-sm text-[#5C7A61]">No ingredients added yet. Click "Add Ingredient" to start.</p>
+                </div>
+              ) : (
+                form.ingredients.map((ingredient, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#4CAF50] text-white flex items-center justify-center text-xs font-bold">
+                      {idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={ingredient}
+                      onChange={(e) => handleUpdateIngredient(idx, e.target.value)}
+                      placeholder={`Ingredient ${idx + 1}`}
+                      className="flex-1 bg-white border border-[#C8E6C9] rounded-xl px-3 py-2 text-sm text-[#1B3A1F]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIngredient(idx)}
+                      className="flex-shrink-0 text-red-600 hover:text-red-700 font-bold text-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          {/* Instructions */}
+          {/* Instructions - Step by step */}
           <div>
-            <label className="block text-sm font-semibold text-[#2E7D32] mb-1.5">Instructions *</label>
-            <textarea
-              value={form.instructions}
-              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-              placeholder="Describe the cooking steps in detail..."
-              rows={6}
-              className="w-full bg-white border border-[#C8E6C9] rounded-xl px-4 py-3 text-sm text-[#1B3A1F] resize-none"
-            />
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-semibold text-[#2E7D32]">Instructions *</label>
+              <button
+                type="button"
+                onClick={handleAddInstruction}
+                className="text-xs bg-[#FF6B6B] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#E63946] transition-colors"
+              >
+                + Add Step
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.instructions.length === 0 ? (
+                <div className="text-center py-4 border-2 border-dashed border-[#C8E6C9] rounded-xl">
+                  <p className="text-sm text-[#5C7A61]">No steps added yet. Click "Add Step" to start.</p>
+                </div>
+              ) : (
+                form.instructions.map((instruction, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#FF6B6B] text-white flex items-center justify-center text-xs font-bold mt-2">
+                      {idx + 1}
+                    </span>
+                    <textarea
+                      value={instruction}
+                      onChange={(e) => handleUpdateInstruction(idx, e.target.value)}
+                      placeholder={`Step ${idx + 1}`}
+                      rows={2}
+                      className="flex-1 bg-white border border-[#C8E6C9] rounded-xl px-3 py-2 text-sm text-[#1B3A1F] resize-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveInstruction(idx)}
+                      className="flex-shrink-0 text-red-600 hover:text-red-700 font-bold text-lg mt-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           <button
