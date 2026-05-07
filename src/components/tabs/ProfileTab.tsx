@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating } from '@/services/recipes';
 import NutritionPanel from '@/components/NutritionPanel';
+import { parseLinksInText } from '@/utils/linkParser';
 
 type Tab = 'recipes' | 'favorites';
 
@@ -138,7 +139,27 @@ export default function ProfileTab() {
               <h3 className="font-display text-xl font-bold text-[#1B3A1F]">{appUser.name}</h3>
               <p className="text-sm text-[#5C7A61]">{appUser.email}</p>
               {appUser.gender && <p className="text-xs text-[#5C7A61] mt-1">👤 {appUser.gender}</p>}
-              {appUser.bio && <p className="text-sm text-[#5C7A61] mt-2 italic">"{appUser.bio}"</p>}
+              {appUser.bio && (
+                <p className="text-sm text-[#5C7A61] mt-2 italic break-words">
+                  "
+                  {parseLinksInText(appUser.bio).map((part, idx) =>
+                    typeof part === 'string' ? (
+                      <span key={idx}>{part}</span>
+                    ) : (
+                      <a
+                        key={idx}
+                        href={part.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700 underline hover:underline"
+                      >
+                        {part.label}
+                      </a>
+                    )
+                  )}
+                  "
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">
               <Trophy size={14} className="text-amber-500" />
