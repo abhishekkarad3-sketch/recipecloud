@@ -38,6 +38,9 @@ const translations: Record<LangCode, T> = {
     heroSubtitle: 'Explore, share, and connect with fellow food enthusiasts in a global community.',
     joinCommunity: 'Join the Community',
     joinDesc: 'Sign in to upload recipes, rate dishes, and earn points.',
+    vegetarian: 'Vegetarian',
+    nonVeg: 'Non-Vegetarian',
+    vegan: 'Vegan',
   },
   hi: {
     appName: 'रेसिपीक्लाउड',
@@ -61,9 +64,11 @@ const translations: Record<LangCode, T> = {
     maxTime: 'अधिकतम समय', sortNewest: 'नवीनतम', sortTop: 'शीर्ष रेटेड',
     noResults: 'कुछ नहीं मिला',    clearFilters: 'फ़िल्टर हटाएं',
     heroSubtitle: 'दुनिया भर के खाना पसंद करने वालों के साथ व्यंजनों का अन्वेषण करें, साझा करें और उनसे जुड़ें।',
-    joinCommunity: 'समुदाय से जुड़ें',  joinDesc: 'रेसिपी अपलोड करें, रेटिंग दें और पॉइंट कमाएं।',
-  },
-  ar: {
+    joinCommunity: 'समुदाय से जुड़ें'    joinDesc: 'रेसिपी अपलोड करें, रेटिंग दें और पॉइंट कमाएं।',
+    vegetarian: 'शाकाहारी',
+    nonVeg: 'मांसाहारी',
+    vegan: 'वीगन',
+  },  ar: {
     appName: 'ريسيبي كلاود',
     tagline: 'مطبخك، في السحابة',
     home: 'الرئيسية', search: 'بحث', upload: 'رفع', profile: 'الملف', leaderboard: 'المتصدرون',
@@ -86,6 +91,9 @@ const translations: Record<LangCode, T> = {
     noResults: 'لم يتم العثور على شيء', clearFilters: 'مسح الفلاتر',
     heroSubtitle: 'استكشف وشارك وتواصل مع زملائك من عشاق الطعام في مجتمع عالمي.',
     joinCommunity: 'انضم إلى المجتمع',    joinDesc: 'سجّل دخولك لرفع الوصفات وكسب النقاط.',
+    vegetarian: 'نباتي',
+    nonVeg: 'غير نباتي',
+    vegan: 'نباتي صرف',
   },
   fr: {
     appName: 'RecipeCloud',
@@ -109,9 +117,11 @@ const translations: Record<LangCode, T> = {
     maxTime: 'Temps max', sortNewest: 'Plus récent', sortTop: 'Mieux noté',
     noResults: 'Aucun résultat',    clearFilters: 'Effacer les filtres',
     heroSubtitle: 'Explorez, partagez et connectez-vous avec d\'autres passionnés de cuisine dans une communauté mondiale.',
-    joinCommunity: 'Rejoindre la Communauté',  joinDesc: 'Connectez-vous pour publier des recettes et gagner des points.',
-  },
-  es: {
+    joinCommunity: 'Rejoindre la Communauté'    joinDesc: 'Connectez-vous pour publier des recettes et gagner des points.',
+    vegetarian: 'Végétarien',
+    nonVeg: 'Non-Végétarien',
+    vegan: 'Végétalien',
+  },  es: {
     appName: 'RecipeCloud',
     tagline: 'Tu Cocina, Amplificada',
     home: 'Inicio', search: 'Buscar', upload: 'Subir', profile: 'Perfil', leaderboard: 'Clasificación',
@@ -134,6 +144,9 @@ const translations: Record<LangCode, T> = {
     noResults: 'Nada encontrado', clearFilters: 'Borrar filtros',
     heroSubtitle: 'Explora, comparte y conéctate con otros entusiastas de la comida en una comunidad global.',
     joinCommunity: 'Únete a la Comunidad',    joinDesc: 'Inicia sesión para subir recetas y ganar puntos.',
+    vegetarian: 'Vegetariano',
+    nonVeg: 'No Vegetariano',
+    vegan: 'Vegano',
   },
 };
 

@@ -42,10 +42,10 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   'Smoothie': '🥤',
 };
 
-const DIETARY_OPTIONS: { value: DietaryType; label: string; emoji: string }[] = [
-  { value: 'veg', label: 'Vegetarian', emoji: '🥬' },
-  { value: 'non-veg', label: 'Non-Vegetarian', emoji: '🍗' },
-  { value: 'vegan', label: 'Vegan', emoji: '🌱' },
+const DIETARY_OPTIONS: { value: DietaryType; labelKey: string; emoji: string }[] = [
+  { value: 'veg', labelKey: 'vegetarian', emoji: '🥦🥛' },
+  { value: 'non-veg', labelKey: 'nonVeg', emoji: '🍗' },
+  { value: 'vegan', labelKey: 'vegan', emoji: '🌱' },
 ];
 
 export default function UploadTab() {
@@ -241,7 +241,7 @@ export default function UploadTab() {
                   }`}
                 >
                   <span className="text-2xl">{opt.emoji}</span>
-                  <span className="text-[10px] font-bold text-[#2E7D32] text-center">{opt.label}</span>
+                  <span className="text-[10px] font-bold text-[#2E7D32] text-center">{t(opt.labelKey)}</span>
                 </button>
               ))}
             </div>

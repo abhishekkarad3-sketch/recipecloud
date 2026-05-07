@@ -159,7 +159,12 @@ export function subscribeToRecipes(callback: (recipes: Recipe[]) => void) {
     .from('recipes')
     .select('*')
     .order('created_at', { ascending: false })
-    .then(({ data }) => {
+    .then(({ data, error }) => {
+      if (error) {
+        console.error('Error fetching recipes:', error);
+        callback([]); // Resolve loading state with empty array on error
+        return;
+      }
       if (data) {
         callback(data.map(mapRecipe));
       }
@@ -169,10 +174,16 @@ export function subscribeToRecipes(callback: (recipes: Recipe[]) => void) {
   const channel = supabase
     .channel('recipes_changes')
     .on('postgres_changes', { event: '*', table: 'recipes', schema: 'public' }, async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('recipes')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching recipes on change:', error);
+        return;
+      }
+
       if (data) {
         callback(data.map(mapRecipe));
       }
