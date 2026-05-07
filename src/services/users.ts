@@ -8,6 +8,9 @@ export interface AppUser {
   points: number;
   favorites: string[];
   createdAt?: string;
+  gender?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 // Create or update user doc on login
@@ -27,6 +30,9 @@ export async function upsertUser(user: Omit<AppUser, 'points' | 'favorites'>): P
       points: 0,
       favorites: [],
       created_at: new Date().toISOString(),
+      gender: user.gender || null,
+      bio: user.bio || null,
+      avatar_url: user.avatarUrl || null,
     });
   } else {
     // Update name/photo in case changed
@@ -36,6 +42,9 @@ export async function upsertUser(user: Omit<AppUser, 'points' | 'favorites'>): P
         name: user.name,
         photo_url: user.photoURL,
         email: user.email,
+        gender: user.gender,
+        bio: user.bio,
+        avatar_url: user.avatarUrl,
       })
       .eq('id', user.uid);
   }
@@ -59,7 +68,22 @@ export async function getUser(uid: string): Promise<AppUser | null> {
     points: data.points,
     favorites: data.favorites || [],
     createdAt: data.created_at,
+    gender: data.gender,
+    bio: data.bio,
+    avatarUrl: data.avatar_url,
   };
+}
+
+// Update user profile
+export async function updateUserProfile(uid: string, updates: Partial<AppUser>): Promise<void> {
+  const updateData: any = {};
+  if (updates.name) updateData.name = updates.name;
+  if (updates.bio !== undefined) updateData.bio = updates.bio;
+  if (updates.gender !== undefined) updateData.gender = updates.gender;
+  if (updates.avatarUrl !== undefined) updateData.avatar_url = updates.avatarUrl;
+  if (updates.photoURL) updateData.photo_url = updates.photoURL;
+
+  await supabase.from('users').update(updateData).eq('id', uid);
 }
 
 // Toggle favorite
@@ -87,6 +111,28 @@ export async function toggleFavorite(uid: string, recipeId: string, isFav: boole
     .eq('id', uid);
 }
 
+// Get user's recipes
+export async function getUserRecipes(uid: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*')
+    .eq('author_id', uid)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return [];
+  return data;
+}
+
+// Delete recipe
+export async function deleteRecipe(recipeId: string): Promise<void> {
+  await supabase.from('recipes').delete().eq('id', recipeId);
+}
+
+// Update recipe
+export async function updateRecipe(recipeId: string, updates: any): Promise<void> {
+  await supabase.from('recipes').update(updates).eq('id', recipeId);
+}
+
 // Leaderboard
 export async function getLeaderboard(count = 10): Promise<AppUser[]> {
   const { data, error } = await supabase
@@ -105,5 +151,8 @@ export async function getLeaderboard(count = 10): Promise<AppUser[]> {
     points: d.points,
     favorites: d.favorites || [],
     createdAt: d.created_at,
+    gender: d.gender,
+    bio: d.bio,
+    avatarUrl: d.avatar_url,
   }));
 }
