@@ -141,6 +141,11 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
                 <p className="text-sm font-semibold text-[#1B3A1F] dark:text-[#E0F2E9]">{recipe.authorName}</p>
                 <p className="text-xs text-[#5C7A61] dark:text-[#9DB5A3]">
                   {new Date(recipe.createdAt).toLocaleDateString()}
+                  {recipe.updatedAt && (
+                    <span className="ml-2 italic opacity-75">
+                      (Updated: {new Date(recipe.updatedAt).toLocaleDateString()})
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
