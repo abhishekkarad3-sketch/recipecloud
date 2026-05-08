@@ -125,6 +125,10 @@ export async function deleteRecipe(recipeId: string): Promise<void> {
   await supabase.from('recipes').delete().eq('id', recipeId);
 }
 
+export async function updateRecipe(recipeId: string, updates: any): Promise<void> {
+  await supabase.from('recipes').update(updates).eq('id', recipeId);
+}
+
 export async function getRecipe(recipeId: string): Promise<Recipe | null> {
   const { data, error } = await supabase
     .from('recipes')
