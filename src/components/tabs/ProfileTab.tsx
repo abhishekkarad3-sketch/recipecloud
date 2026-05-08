@@ -227,9 +227,9 @@ export default function ProfileTab() {
         {/* Green banner */}
         <div className="green-gradient h-20 relative">
           <div className="absolute -bottom-8 left-6">
-            {user.user_metadata?.avatar_url ? (
-              <Image src={user.user_metadata.avatar_url} alt="" width={64} height={64}
-                className="rounded-2xl ring-4 ring-white shadow-lg" unoptimized />
+            {appUser.avatarUrl || user.user_metadata?.avatar_url ? (
+              <Image src={appUser.avatarUrl || user.user_metadata?.avatar_url} alt="" width={64} height={64}
+                className="rounded-2xl ring-4 ring-white shadow-lg object-cover" unoptimized />
             ) : (
               <div className="w-16 h-16 green-gradient rounded-2xl ring-4 ring-white flex items-center justify-center text-2xl font-bold text-white shadow-lg">
                 {appUser.name?.[0]||'U'}
@@ -283,9 +283,9 @@ export default function ProfileTab() {
 
           {isEditingProfile && (
             <div className="mt-4 space-y-4 bg-[#F1F8F4] p-4 rounded-xl border border-[#E8F5E9]">
-              {/* Avatar Upload */}
+              {/* Profile Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Avatar</label>
+                <label className="block text-sm font-medium text-[#1B3A1F] mb-2">Profile Image</label>
                 <input
                   type="file"
                   accept="image/*"

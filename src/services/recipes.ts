@@ -21,6 +21,7 @@ export interface Recipe {
   imageUrl: string;
   authorId: string;
   authorName: string;
+  authorAvatar?: string;
   createdAt: string;
   ratingTotal: number;
   ratingCount: number;
@@ -67,6 +68,7 @@ export async function addRecipe(
       image_url: recipe.imageUrl,
       author_id: recipe.authorId,
       author_name: recipe.authorName,
+      author_avatar: (recipe as any).authorAvatar || null,
       rating_total: 0,
       rating_count: 0,
       users_who_rated: [],
@@ -178,6 +180,38 @@ export async function updateRecipe(recipeId: string, updates: any): Promise<void
   await supabase.from('recipes').update(updates).eq('id', recipeId);
 }
 
+export async function deleteReview(recipeId: string, userId: string): Promise<void> {
+  const { data: recipe } = await supabase
+    .from('recipes')
+    .select('rating_total, rating_count, users_who_rated, comments')
+    .eq('id', recipeId)
+    .single();
+
+  if (!recipe) return;
+
+  const comments = recipe.comments || [];
+  const commentIdx = comments.findIndex((c: any) => c.userId === userId);
+  
+  if (commentIdx === -1) return;
+
+  const deletedComment = comments[commentIdx];
+  const newComments = comments.filter((c: any) => c.userId !== userId);
+  const newUsersWhoRated = (recipe.users_who_rated || []).filter((id: string) => id !== userId);
+  
+  const newRatingTotal = (recipe.rating_total || 0) - deletedComment.rating;
+  const newRatingCount = Math.max(0, (recipe.rating_count || 0) - 1);
+
+  await supabase
+    .from('recipes')
+    .update({
+      rating_total: newRatingTotal,
+      rating_count: newRatingCount,
+      users_who_rated: newUsersWhoRated,
+      comments: newComments
+    })
+    .eq('id', recipeId);
+}
+
 export async function getRecipe(recipeId: string): Promise<Recipe | null> {
   const { data, error } = await supabase
     .from('recipes')
@@ -198,6 +232,7 @@ export async function getRecipe(recipeId: string): Promise<Recipe | null> {
     imageUrl: data.image_url,
     authorId: data.author_id,
     authorName: data.author_name,
+    authorAvatar: data.author_avatar,
     createdAt: data.created_at,
     ratingTotal: data.rating_total,
     ratingCount: data.rating_count,
@@ -262,6 +297,7 @@ function mapRecipe(data: any): Recipe {
     imageUrl: data.image_url,
     authorId: data.author_id,
     authorName: data.author_name,
+    authorAvatar: data.author_avatar,
     createdAt: data.created_at,
     ratingTotal: data.rating_total,
     ratingCount: data.rating_count,

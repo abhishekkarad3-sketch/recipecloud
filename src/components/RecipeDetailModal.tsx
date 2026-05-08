@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { X, Clock, Star, Heart, ChefHat, Flame, Leaf, AlertCircle, MessageSquare, Send, User } from 'lucide-react';
-import { Recipe, avgRating, rateRecipe } from '@/services/recipes';
+import { X, Clock, Star, Heart, ChefHat, Flame, Leaf, AlertCircle, MessageSquare, Send, User, Trash2 } from 'lucide-react';
+import { Recipe, avgRating, rateRecipe, deleteReview } from '@/services/recipes';
 import { toggleFavorite, getUser, AppUser } from '@/services/users';
 import UserProfileModal from '@/components/UserProfileModal';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +33,7 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
   const [justRated, setJustRated] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [isDeletingReview, setIsDeletingReview] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<AppUser | null>(null);
 
   const isFav = appUser?.favorites?.includes(recipe.id!) ?? false;
@@ -84,6 +85,24 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
       setHoverStar(userRating.rating);
       setShowStars(true);
       setJustRated(false);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!user || !recipe.id || isDeletingReview) return;
+    if (!confirm('Are you sure you want to delete your review?')) return;
+    
+    setIsDeletingReview(true);
+    try {
+      await deleteReview(recipe.id, user.id);
+      setJustRated(false);
+      setShowStars(false);
+      // In a real app, we'd refresh the recipe data here
+      await refreshUser();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+    } finally {
+      setIsDeletingReview(false);
     }
   };
 
@@ -174,8 +193,12 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
               onClick={handleViewAuthor}
               className="flex items-center gap-3 pt-2 border-t border-[#E8F5E9] dark:border-[#2E7D32] w-full text-left hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 rounded-full bg-[#E8F5E9] dark:bg-[#2E7D32] flex items-center justify-center text-xs font-bold text-[#2E7D32] dark:text-[#A5D6A7]">
-                {recipe.authorName[0]}
+              <div className="w-8 h-8 rounded-full bg-[#E8F5E9] dark:bg-[#2E7D32] flex items-center justify-center text-xs font-bold text-[#2E7D32] dark:text-[#A5D6A7] overflow-hidden">
+                {recipe.authorAvatar ? (
+                  <Image src={recipe.authorAvatar} alt="" width={32} height={32} className="rounded-full object-cover" unoptimized />
+                ) : (
+                  recipe.authorName[0]
+                )}
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#1B3A1F] dark:text-[#E0F2E9] flex items-center gap-1">
@@ -253,12 +276,21 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
               {justRated && (
                 <div className="flex items-center justify-between px-4 py-3 bg-[#F1F8F4] dark:bg-[#2E3D2F] rounded-xl border border-[#C8E6C9] dark:border-[#4CAF50]/30">
                   <span className="text-sm text-[#4CAF50] font-bold uppercase tracking-widest">✓ Thanks for rating!</span>
-                  <button 
-                    onClick={startEditingRating}
-                    className="text-xs font-bold text-[#2E7D32] hover:underline"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={startEditingRating}
+                      className="text-xs font-bold text-[#2E7D32] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={handleDeleteReview}
+                      disabled={isDeletingReview}
+                      className="text-xs font-bold text-red-500 hover:underline disabled:opacity-50"
+                    >
+                      {isDeletingReview ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -339,19 +371,31 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
                   <div key={idx} className="bg-gray-50 dark:bg-[#2E3D2F] p-4 rounded-2xl border border-[#E8F5E9] dark:border-[#2E7D32]">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#E8F5E9] dark:bg-[#1B2A1F] flex items-center justify-center text-[10px] font-bold text-[#2E7D32]">
+                        <div className="w-6 h-6 rounded-full bg-[#E8F5E9] dark:bg-[#1B2A1F] flex items-center justify-center text-[10px] font-bold text-[#2E7D32] overflow-hidden">
                           {comment.userAvatar ? (
-                            <Image src={comment.userAvatar} alt="" width={24} height={24} className="rounded-full" unoptimized />
+                            <Image src={comment.userAvatar} alt="" width={24} height={24} className="rounded-full object-cover" unoptimized />
                           ) : (
                             comment.userName[0]
                           )}
                         </div>
                         <span className="text-xs font-bold text-[#1B3A1F] dark:text-[#E0F2E9]">{comment.userName}</span>
                       </div>
-                      <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={10} className={i < comment.rating ? 'fill-amber-400 stroke-amber-400' : 'stroke-gray-300'} />
-                        ))}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} size={10} className={i < comment.rating ? 'fill-amber-400 stroke-amber-400' : 'stroke-gray-300'} />
+                          ))}
+                        </div>
+                        {user?.id === comment.userId && (
+                          <button 
+                            onClick={handleDeleteReview}
+                            disabled={isDeletingReview}
+                            className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors disabled:opacity-50"
+                            title="Delete review"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className="text-sm text-[#5C7A61] dark:text-[#9DB5A3]">{comment.text || <span className="italic opacity-50">No comment provided</span>}</p>

@@ -6,14 +6,16 @@ import RecipeDetailModal from '@/components/RecipeDetailModal';
 import { useLang } from '@/context/LangContext';
 import { Recipe, subscribeToRecipes, CATEGORIES } from '@/services/recipes';
 import { AppUser, searchUsers } from '@/services/users';
-import UserProfileModal from '@/components/UserProfileModal';
+// import UserProfileModal from '@/components/UserProfileModal';
 import Image from 'next/image';
 import { User } from 'lucide-react';
 
 type Sort = 'newest' | 'top';
 const DIFFS = ['All', 'Easy', 'Medium', 'Hard'];
 
-export default function SearchTab() {
+interface Props { onViewUser?: (user: AppUser) => void; }
+
+export default function SearchTab({ onViewUser }: Props) {
   const { t } = useLang();
   const [all, setAll]           = useState<Recipe[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -26,7 +28,7 @@ export default function SearchTab() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
+  // const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToRecipes(data => { setAll(data); setLoading(false); });
@@ -176,7 +178,7 @@ export default function SearchTab() {
             {users.map(u => (
               <button 
                 key={u.uid}
-                onClick={() => setSelectedUser(u)}
+                onClick={() => onViewUser?.(u)}
                 className="flex-shrink-0 flex items-center gap-3 bg-white border border-[#E8F5E9] rounded-2xl p-3 hover:border-[#4CAF50] transition-all shadow-sm"
               >
                 <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-[#E8F5E9]">
@@ -233,7 +235,7 @@ export default function SearchTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {results.map((r, i) => (
             <div key={r.id} className={`anim-up d-${Math.min(i % 6, 5)}`}>
-              <RecipeCard recipe={r} onViewDetails={setSelectedRecipe} />
+              <RecipeCard recipe={r} onViewDetails={setSelectedRecipe} onViewUser={onViewUser} />
             </div>
           ))}
         </div>
@@ -243,9 +245,9 @@ export default function SearchTab() {
         <RecipeDetailModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
       )}
 
-      {selectedUser && (
+      {/* {selectedUser && (
         <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} />
-      )}
+      )} */}
     </div>
   );
 }

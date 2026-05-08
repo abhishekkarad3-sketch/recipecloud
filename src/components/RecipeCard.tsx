@@ -4,11 +4,11 @@ import Image from 'next/image';
 import { Clock, Star, Heart, ChefHat, Flame, User } from 'lucide-react';
 import { Recipe, avgRating, rateRecipe } from '@/services/recipes';
 import { toggleFavorite, getUser, AppUser } from '@/services/users';
-import UserProfileModal from '@/components/UserProfileModal';
+// import UserProfileModal from '@/components/UserProfileModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 
-interface Props { recipe: Recipe; size?: 'sm' | 'md'; onViewDetails?: (recipe: Recipe) => void; }
+interface Props { recipe: Recipe; size?: 'sm' | 'md'; onViewDetails?: (recipe: Recipe) => void; onViewUser?: (user: AppUser) => void; }
 
 const DIFF: Record<string, string> = {
   Easy:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -54,7 +54,11 @@ export default function RecipeCard({ recipe, size = 'md', onViewDetails }: Props
     e.stopPropagation();
     const author = await getUser(recipe.authorId);
     if (author) {
-      setSelectedAuthor(author);
+      if (onViewUser) {
+        onViewUser(author);
+      } else {
+        setSelectedAuthor(author);
+      }
     }
   };
 
@@ -177,9 +181,9 @@ export default function RecipeCard({ recipe, size = 'md', onViewDetails }: Props
           </div>
         )}
       </div>
-      {selectedAuthor && (
+      {/* {selectedAuthor && (
         <UserProfileModal user={selectedAuthor} onClose={() => setSelectedAuthor(null)} />
-      )}
+      )} */}
     </div>
   );
 }

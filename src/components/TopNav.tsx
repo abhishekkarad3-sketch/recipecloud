@@ -27,7 +27,7 @@ interface Props {
 }
 
 export default function TopNav({ activeTab, setTab }: Props) {
-  const { user, logout } = useAuth();
+  const { user, appUser, logout } = useAuth();
   const { t, lang, setLang } = useLang();
   const { theme, toggle } = useTheme();
 
@@ -158,13 +158,14 @@ export default function TopNav({ activeTab, setTab }: Props) {
                       Chef Member
                     </span>
                   </div>
-                  {user.user_metadata?.avatar_url && (
+                  {(appUser?.avatarUrl || user.user_metadata?.avatar_url) && (
                     <Image
-                      src={user.user_metadata.avatar_url}
-                      alt={user.user_metadata.full_name || 'User'}
+                      src={appUser?.avatarUrl || user.user_metadata.avatar_url}
+                      alt={appUser?.name || user.user_metadata.full_name || 'User'}
                       width={36}
                       height={36}
-                      className="rounded-full border-2 border-[#4CAF50] p-0.5"
+                      className="rounded-full border-2 border-[#4CAF50] p-0.5 aspect-square object-cover"
+                      unoptimized
                     />
                   )}
                   <button

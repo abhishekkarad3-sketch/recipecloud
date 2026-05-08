@@ -59,9 +59,9 @@ export default function LeaderboardTab() {
                   className={`${p.size} bg-gradient-to-br ${p.bg} border-2 ${p.border} rounded-3xl p-4 text-center shadow-md ${p.shadow} transition-transform hover:scale-105`}>
                   <div className="text-3xl mb-2">{p.badge}</div>
                   <div className="flex justify-center mb-3">
-                    {u.photoURL ? (
-                      <Image src={u.photoURL} alt={u.name} width={52} height={52}
-                        className={`rounded-2xl ring-4 ${p.ring}`} unoptimized/>
+                    {u.avatarUrl || u.photoURL ? (
+                      <Image src={u.avatarUrl || u.photoURL} alt={u.name} width={52} height={52}
+                        className={`rounded-2xl ring-4 ${p.ring} aspect-square object-cover`} unoptimized/>
                     ) : (
                       <div className={`w-13 h-13 w-[52px] h-[52px] green-gradient rounded-2xl flex items-center justify-center font-bold text-white text-xl ring-4 ${p.ring}`}>
                         {u.name?.[0]||'?'}
@@ -83,9 +83,9 @@ export default function LeaderboardTab() {
                 <div key={u.uid}
                   className="flex items-center gap-4 px-5 py-3.5 border-b border-[#F1F8F4] last:border-0 hover:bg-[#F9FFF9] transition-colors">
                   <div className="w-7 text-center font-display font-bold text-[#5C7A61]">{i+4}</div>
-                  {u.photoURL ? (
-                    <Image src={u.photoURL} alt={u.name} width={38} height={38}
-                      className="rounded-xl ring-2 ring-[#C8E6C9]" unoptimized/>
+                  {u.avatarUrl || u.photoURL ? (
+                    <Image src={u.avatarUrl || u.photoURL} alt={u.name} width={38} height={38}
+                      className="rounded-xl ring-2 ring-[#C8E6C9] aspect-square object-cover" unoptimized/>
                   ) : (
                     <div className="w-9 h-9 bg-[#E8F5E9] rounded-xl flex items-center justify-center font-bold text-[#2E7D32]">
                       {u.name?.[0]||'?'}
