@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen, X } from 'lucide-react';
+import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen, X, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating, updateRecipe, uploadRecipeImage, CATEGORIES } from '@/services/recipes';
@@ -124,6 +124,27 @@ export default function ProfileTab() {
       setRecipeImageFile(file);
       setRecipeImagePreview(URL.createObjectURL(file));
     }
+  };
+
+  const addStep = () => {
+    setRecipeFormData(p => ({
+      ...p,
+      instructions: Array.isArray(p.instructions) ? [...p.instructions, ''] : [...(p.instructions as any), '']
+    }));
+  };
+
+  const removeStep = (idx: number) => {
+    setRecipeFormData(p => ({
+      ...p,
+      instructions: Array.isArray(p.instructions) ? p.instructions.filter((_, i) => i !== idx) : []
+    }));
+  };
+
+  const updateStep = (idx: number, val: string) => {
+    setRecipeFormData(p => ({
+      ...p,
+      instructions: Array.isArray(p.instructions) ? p.instructions.map((ins, i) => i === idx ? val : ins) : [val]
+    }));
   };
 
   const handleSaveRecipe = async () => {
@@ -387,12 +408,40 @@ export default function ProfileTab() {
                 placeholder="Ingredients (one per line)"
               />
 
-              <textarea 
-                value={Array.isArray(recipeFormData.instructions) ? recipeFormData.instructions.join('\n') : recipeFormData.instructions} 
-                onChange={e => setRecipeFormData({...recipeFormData, instructions: e.target.value.split('\n')})}
-                className="w-full p-3 border border-[#E8F5E9] rounded-xl h-32"
-                placeholder="Instructions (one per line)"
-              />
+              {/* Instructions - Step by step */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-[#1B3A1F]">Instructions</label>
+                  <button 
+                    onClick={addStep}
+                    className="flex items-center gap-1 text-xs text-[#4CAF50] font-semibold hover:text-[#2E7D32] transition-colors"
+                  >
+                    <Plus size={14} /> Add Step
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {Array.isArray(recipeFormData.instructions) && recipeFormData.instructions.map((ins, idx) => (
+                    <div key={idx} className="flex gap-2 items-start">
+                      <span className="text-xs font-bold text-[#5C7A61] w-12 text-center mt-2.5">Step {idx + 1}</span>
+                      <textarea
+                        value={ins}
+                        onChange={e => updateStep(idx, e.target.value)}
+                        placeholder={`Step ${idx + 1}: Describe what to do...`}
+                        rows={2}
+                        className="flex-1 p-2 border border-[#E8F5E9] rounded-lg text-sm resize-none"
+                      />
+                      {recipeFormData.instructions && recipeFormData.instructions.length > 1 && (
+                        <button
+                          onClick={() => removeStep(idx)}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1 mt-2.5"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="p-6 border-t border-[#E8F5E9] flex gap-3">
               <button 
