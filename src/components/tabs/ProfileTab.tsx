@@ -147,6 +147,27 @@ export default function ProfileTab() {
     }));
   };
 
+  const addIngredient = () => {
+    setRecipeFormData(p => ({
+      ...p,
+      ingredients: Array.isArray(p.ingredients) ? [...p.ingredients, ''] : ['']
+    }));
+  };
+
+  const removeIngredient = (idx: number) => {
+    setRecipeFormData(p => ({
+      ...p,
+      ingredients: Array.isArray(p.ingredients) ? p.ingredients.filter((_, i) => i !== idx) : []
+    }));
+  };
+
+  const updateIngredient = (idx: number, val: string) => {
+    setRecipeFormData(p => ({
+      ...p,
+      ingredients: Array.isArray(p.ingredients) ? p.ingredients.map((ing, i) => i === idx ? val : ing) : [val]
+    }));
+  };
+
   const handleSaveRecipe = async () => {
     if (!editingRecipe || !user) return;
     setSavingRecipe(true);
@@ -401,12 +422,39 @@ export default function ProfileTab() {
                 />
               </div>
 
-              <textarea 
-                value={recipeFormData.ingredients?.join('\n')} 
-                onChange={e => setRecipeFormData({...recipeFormData, ingredients: e.target.value.split('\n')})}
-                className="w-full p-3 border border-[#E8F5E9] rounded-xl h-32"
-                placeholder="Ingredients (one per line)"
-              />
+              {/* Ingredients - Step by step */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-[#1B3A1F]">Ingredients</label>
+                  <button 
+                    onClick={addIngredient}
+                    className="flex items-center gap-1 text-xs text-[#4CAF50] font-semibold hover:text-[#2E7D32] transition-colors"
+                  >
+                    <Plus size={14} /> Add Ingredient
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {Array.isArray(recipeFormData.ingredients) && recipeFormData.ingredients.map((ing, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <span className="text-xs font-bold text-[#5C7A61] w-6 text-center">{idx + 1}.</span>
+                      <input
+                        value={ing}
+                        onChange={e => updateIngredient(idx, e.target.value)}
+                        placeholder={`e.g. 2 cups flour`}
+                        className="flex-1 p-2 border border-[#E8F5E9] rounded-lg text-sm"
+                      />
+                      {recipeFormData.ingredients && recipeFormData.ingredients.length > 1 && (
+                        <button
+                          onClick={() => removeIngredient(idx)}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Instructions - Step by step */}
               <div className="space-y-2">

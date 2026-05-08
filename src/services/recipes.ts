@@ -1,6 +1,15 @@
 import { supabase } from '@/lib/supabase';
 import type { NutritionData } from './nutrition';
 
+export interface Comment {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+}
+
 export interface Recipe {
   id?: string;
   name: string;
@@ -16,6 +25,7 @@ export interface Recipe {
   ratingTotal: number;
   ratingCount: number;
   usersWhoRated: string[];
+  comments?: Comment[];
   nutrition?: NutritionData;
   dietaryType?: 'veg' | 'non-veg' | 'vegan';
   updatedAt?: string;
@@ -85,40 +95,79 @@ export async function addRecipe(
   return data.id;
 }
 
-export async function rateRecipe(recipeId: string, userId: string, rating: number): Promise<void> {
+export async function rateRecipe(
+  recipeId: string, 
+  userId: string, 
+  rating: number, 
+  commentText?: string,
+  userName?: string,
+  userAvatar?: string
+): Promise<void> {
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('rating_total, rating_count, users_who_rated')
+    .select('rating_total, rating_count, users_who_rated, comments')
     .eq('id', recipeId)
     .single();
 
   if (!recipe) return;
 
   const usersWhoRated = recipe.users_who_rated || [];
-  if (usersWhoRated.includes(userId)) return;
+  const comments = recipe.comments || [];
+  const existingCommentIdx = comments.findIndex((c: any) => c.userId === userId);
+  
+  let newRatingTotal = recipe.rating_total || 0;
+  let newRatingCount = recipe.rating_count || 0;
+  let newUsersWhoRated = [...usersWhoRated];
+  let newComments = [...comments];
+
+  if (existingCommentIdx > -1) {
+    // Update existing rating
+    const oldRating = comments[existingCommentIdx].rating;
+    newRatingTotal = newRatingTotal - oldRating + rating;
+    newComments[existingCommentIdx] = {
+      ...newComments[existingCommentIdx],
+      rating,
+      text: commentText || newComments[existingCommentIdx].text,
+      createdAt: new Date().toISOString()
+    };
+  } else {
+    // Add new rating
+    newRatingTotal += rating;
+    newRatingCount += 1;
+    newUsersWhoRated.push(userId);
+    newComments.push({
+      userId,
+      userName: userName || 'Chef',
+      userAvatar: userAvatar || '',
+      rating,
+      text: commentText || '',
+      createdAt: new Date().toISOString()
+    });
+
+    // Award points only for new ratings
+    const { data: userData } = await supabase
+      .from('users')
+      .select('points')
+      .eq('id', userId)
+      .single();
+    
+    if (userData) {
+      await supabase
+        .from('users')
+        .update({ points: (userData.points || 0) + 1 })
+        .eq('id', userId);
+    }
+  }
 
   await supabase
     .from('recipes')
     .update({
-      rating_total: (recipe.rating_total || 0) + rating,
-      rating_count: (recipe.rating_count || 0) + 1,
-      users_who_rated: [...usersWhoRated, userId],
+      rating_total: newRatingTotal,
+      rating_count: newRatingCount,
+      users_who_rated: newUsersWhoRated,
+      comments: newComments
     })
     .eq('id', recipeId);
-
-  // Award points to user for rating
-  const { data: userData } = await supabase
-    .from('users')
-    .select('points')
-    .eq('id', userId)
-    .single();
-  
-  if (userData) {
-    await supabase
-      .from('users')
-      .update({ points: (userData.points || 0) + 1 })
-      .eq('id', userId);
-  }
 }
 
 export async function deleteRecipe(recipeId: string): Promise<void> {
@@ -217,6 +266,7 @@ function mapRecipe(data: any): Recipe {
     ratingTotal: data.rating_total,
     ratingCount: data.rating_count,
     usersWhoRated: data.users_who_rated || [],
+    comments: data.comments || [],
     nutrition: data.nutrition,
     dietaryType: data.dietary_type || 'veg',
     updatedAt: data.updated_at,
