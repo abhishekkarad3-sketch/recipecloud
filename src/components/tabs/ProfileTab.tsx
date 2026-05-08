@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen } from 'lucide-react';
+import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating, updateRecipe, uploadRecipeImage, CATEGORIES } from '@/services/recipes';
