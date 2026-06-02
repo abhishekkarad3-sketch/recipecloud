@@ -1,6 +1,8 @@
 # 🌿 RecipeCloud — Cloud Recipe App
 
-Full-stack recipe community: Next.js 15 + Firebase + Tailwind CSS.
+Full-stack recipe community: Next.js 15 + Supabase + Tailwind CSS.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/abhishekkarad3-sketch/recipecloud)
 
 ---
 
