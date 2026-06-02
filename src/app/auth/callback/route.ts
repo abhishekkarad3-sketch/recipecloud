@@ -11,7 +11,5 @@ export async function GET(request: Request) {
   }
 
   // Redirect to home page on success
-  return NextResponse.redirect(
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://recipecloud1.onrender.com'
-  );
+  return NextResponse.redirect(requestUrl.origin);
 }
