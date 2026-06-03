@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -10,5 +11,7 @@ export async function GET(request: Request) {
   }
 
   // Redirect to home page on success
-  return NextResponse.redirect(requestUrl.origin);
+  return NextResponse.redirect(
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://recipecloud1.onrender.com'
+  );
 }

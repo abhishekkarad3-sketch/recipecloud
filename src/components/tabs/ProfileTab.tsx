@@ -129,11 +129,7 @@ export default function ProfileTab() {
     const file = e.target.files?.[0];
     if (file) {
       setRecipeImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setRecipeImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setRecipeImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -407,19 +403,13 @@ export default function ProfileTab() {
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {/* Image Edit */}
-	              <div className="relative h-40 bg-gray-100 rounded-2xl overflow-hidden group">
-	                {recipeImagePreview ? (
-	                  <Image src={recipeImagePreview} alt="" fill className="object-cover" unoptimized />
-	                ) : (
-	                  <div className="w-full h-full flex items-center justify-center bg-[#F1F8F4]">
-	                    <ChefHat size={48} className="text-[#A5D6A7]" />
-	                  </div>
-	                )}
-	                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-	                  <span className="text-white font-bold">Change Photo</span>
-	                  <input type="file" accept="image/*" className="hidden" onChange={handleRecipeImageChange} />
-	                </label>
-	              </div>
+              <div className="relative h-40 bg-gray-100 rounded-2xl overflow-hidden group">
+                <Image src={recipeImagePreview} alt="" fill className="object-cover" unoptimized />
+                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                  <span className="text-white font-bold">Change Photo</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleRecipeImageChange} />
+                </label>
+              </div>
 
               <input 
                 value={recipeFormData.name} 
@@ -548,21 +538,13 @@ export default function ProfileTab() {
               <div key={recipe.id} className="bg-white rounded-2xl border border-[#E8F5E9] shadow-sm overflow-hidden">
                 <div className="flex items-center gap-4 px-5 py-4">
                   {/* Thumbnail */}
-	                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#E8F5E9] shrink-0 relative">
-	                    {recipe.imageUrl ? (
-	                      <Image 
-	                        src={recipe.imageUrl} 
-	                        alt={recipe.name} 
-	                        fill 
-	                        className="object-cover" 
-	                        unoptimized 
-	                      />
-	                    ) : (
-	                      <div className="w-full h-full flex items-center justify-center">
-	                        <ChefHat size={22} className="text-[#A5D6A7]"/>
-	                      </div>
-	                    )}
-	                  </div>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#E8F5E9] shrink-0">
+                    {recipe.imageUrl ? (
+                      <Image src={recipe.imageUrl} alt={recipe.name} width={56} height={56} className="object-cover w-full h-full" unoptimized />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><ChefHat size={22} className="text-[#A5D6A7]"/></div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-[#1B3A1F] truncate">{recipe.name}</div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-[#5C7A61]">
