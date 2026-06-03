@@ -1,13 +1,21 @@
 import { createClient } from './client';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://recipecloud1.onrender.com';
+const getSiteUrl = () => {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:4028';
+};
 
 export async function signInWithGoogle() {
   const supabase = createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${SITE_URL}/auth/callback`,
+      redirectTo: `${getSiteUrl()}/auth/callback`,
     },
   });
   if (error) throw new Error(`Failed to sign in with Google: ${error.message}`);
