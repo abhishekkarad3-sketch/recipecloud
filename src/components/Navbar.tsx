@@ -82,11 +82,18 @@ export default function Navbar() {
                   onClick={() => setDropOpen(!dropOpen)}
                   className="flex items-center gap-2 bg-[#E8F5E9] rounded-full px-3 py-1.5 hover:bg-[#C8E6C9] transition-colors"
                 >
-                  {user.user_metadata?.avatar_url ? (
-                    <Image src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name || ''} width={28} height={28} className="rounded-full" />
+                  {appUser?.avatarUrl || user.user_metadata?.avatar_url ? (
+                    <Image 
+                      src={appUser?.avatarUrl || user.user_metadata.avatar_url} 
+                      alt={appUser?.name || user.user_metadata.full_name || ''} 
+                      width={28} 
+                      height={28} 
+                      className="rounded-full w-7 h-7 object-cover" 
+                      unoptimized 
+                    />
                   ) : (
                     <div className="w-7 h-7 bg-[#4CAF50] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user.user_metadata?.full_name?.[0] || 'U'}
+                      {appUser?.name?.[0] || user.user_metadata?.full_name?.[0] || 'U'}
                     </div>
                   )}
                   <span className="text-sm font-medium text-[#2E7D32] max-w-[100px] truncate">
