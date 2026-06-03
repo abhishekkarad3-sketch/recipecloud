@@ -47,7 +47,7 @@ export default function NutritionPanel({ data, perServing = true }: Props) {
           </span>
           <div className="flex items-center gap-1 bg-[#F1F8F4] rounded-full px-3 py-1">
             <Pill size={11} className="text-[#4CAF50]" />
-            <span className="text-xs font-semibold text-[#2E7D32]">AI Analyzed</span>
+            <span className="text-xs font-semibold text-[#2E7D32]">Manual Entry</span>
           </div>
         </div>
 

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { ImagePlus, Loader2, CheckCircle, AlertCircle, ChefHat, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, CheckCircle, AlertCircle, ChefHat, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 import { addRecipe, uploadRecipeImage, CATEGORIES, Recipe } from '@/services/recipes';
-import { analyzeNutrition, NutritionData } from '@/services/nutrition';
+import { createEmptyNutrition, NutritionData } from '@/services/nutrition';
 import NutritionPanel from '@/components/NutritionPanel';
 
 type Difficulty = 'Easy' | 'Medium' | 'Hard';
@@ -57,8 +57,8 @@ export default function UploadTab() {
   const [loading, setLoading]   = useState(false);
   const [status, setStatus]     = useState<'idle'|'ok'|'err'>('idle');
   const [errMsg, setErrMsg]     = useState('');
-  const [nutrition, setNutrition] = useState<NutritionData|null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [nutrition, setNutrition] = useState<NutritionData>(createEmptyNutrition());
+  const [showNutritionForm, setShowNutritionForm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const set = (k: keyof FormData, v: any) => setForm(p => ({...p, [k]:v}));
@@ -92,12 +92,8 @@ export default function UploadTab() {
     setForm(p => ({...p, instructions: p.instructions.map((ins, i) => i === idx ? val : ins)}));
   };
 
-  const handleAnalyze = async () => {
-    const validIngredients = form.ingredients.filter(Boolean);
-    if (validIngredients.length === 0) { setErrMsg('Add at least one ingredient.'); setStatus('err'); return; }
-    setAnalyzing(true); setStatus('idle');
-    const result = await analyzeNutrition(validIngredients, form.name || 'Recipe');
-    setNutrition(result); setAnalyzing(false);
+  const updateNutrition = (field: keyof NutritionData, value: any) => {
+    setNutrition(p => ({...p, [field]: value}));
   };
 
   const submit = async () => {
@@ -127,12 +123,12 @@ export default function UploadTab() {
         imageUrl,
         authorId: user.id,
         authorName: appUser.name,
-        nutrition: nutrition ?? undefined,
+        nutrition: nutrition,
         dietaryType: form.dietaryType,
       });
       
       await refreshUser();
-      setForm(INIT); setFile(null); setPreview(''); setNutrition(null);
+      setForm(INIT); setFile(null); setPreview(''); setNutrition(createEmptyNutrition()); setShowNutritionForm(false);
       setStatus('ok'); setTimeout(() => setStatus('idle'), 5000);
     } catch {
       setErrMsg('Upload failed. Please check your Supabase and Cloudinary configuration.'); setStatus('err');
@@ -326,10 +322,10 @@ export default function UploadTab() {
             </div>
           </div>
 
-          {/* Analyze button */}
-          <button onClick={handleAnalyze} disabled={analyzing}
-            className="w-full flex items-center justify-center gap-2 bg-[#F1F8F4] border-2 border-[#A5D6A7] text-[#2E7D32] py-3 rounded-xl font-semibold text-sm hover:border-[#4CAF50] hover:bg-[#E8F5E9] transition-all disabled:opacity-60">
-            {analyzing ? <><Loader2 size={16} className="animate-spin" />{t('analyzing')}</> : <><Sparkles size={16} className="text-[#4CAF50]" />{t('analyzeNutrition')}</>}
+          {/* Toggle Nutrition Form */}
+          <button onClick={() => setShowNutritionForm(!showNutritionForm)}
+            className="w-full flex items-center justify-center gap-2 bg-[#F1F8F4] border-2 border-[#A5D6A7] text-[#2E7D32] py-3 rounded-xl font-semibold text-sm hover:border-[#4CAF50] hover:bg-[#E8F5E9] transition-all">
+            {showNutritionForm ? '✕ Hide' : '+ Add'} Nutrition Info
           </button>
 
           {/* Submit */}
@@ -341,18 +337,92 @@ export default function UploadTab() {
 
         {/* Right column — nutrition */}
         <div>
-          {nutrition ? (
-            <NutritionPanel data={nutrition} perServing />
+          {showNutritionForm ? (
+            <div className="bg-white rounded-2xl border border-[#E8F5E9] p-5 space-y-4 max-h-[600px] overflow-y-auto">
+              <h3 className="font-bold text-[#1B3A1F] text-sm">📊 Nutrition Information (per serving)</h3>
+              
+              {/* Calories */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Calories (kcal)</label>
+                <input type="number" min="0" value={nutrition.calories} onChange={e => updateNutrition('calories', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Protein */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Protein (g)</label>
+                <input type="number" min="0" step="0.1" value={nutrition.protein} onChange={e => updateNutrition('protein', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Fat */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Fat (g)</label>
+                <input type="number" min="0" step="0.1" value={nutrition.fat} onChange={e => updateNutrition('fat', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Carbs */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Carbs (g)</label>
+                <input type="number" min="0" step="0.1" value={nutrition.carbs} onChange={e => updateNutrition('carbs', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Sugar */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Sugar (g)</label>
+                <input type="number" min="0" step="0.1" value={nutrition.sugar} onChange={e => updateNutrition('sugar', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Fiber */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Fiber (g)</label>
+                <input type="number" min="0" step="0.1" value={nutrition.fiber} onChange={e => updateNutrition('fiber', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Sodium */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Sodium (mg)</label>
+                <input type="number" min="0" value={nutrition.sodium} onChange={e => updateNutrition('sodium', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Servings */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Servings</label>
+                <input type="number" min="1" value={nutrition.servings} onChange={e => updateNutrition('servings', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Health Score */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Health Score (1-10)</label>
+                <input type="number" min="1" max="10" value={nutrition.healthScore} onChange={e => updateNutrition('healthScore', +e.target.value)}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F]" />
+              </div>
+
+              {/* Health Tip */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#2E7D32] uppercase">Health Tip</label>
+                <textarea value={nutrition.healthTip} onChange={e => updateNutrition('healthTip', e.target.value)}
+                  placeholder="e.g. Rich in protein and fiber..."
+                  rows={2}
+                  className="w-full bg-white border border-[#C8E6C9] rounded-lg px-3 py-2 text-sm text-[#1B3A1F] resize-none" />
+              </div>
+            </div>
           ) : (
             <div className="bg-white rounded-2xl border-2 border-dashed border-[#C8E6C9] h-full flex flex-col items-center justify-center py-16 text-center px-6">
               <div className="w-16 h-16 bg-[#E8F5E9] rounded-2xl flex items-center justify-center mb-4">
-                <Sparkles size={28} className="text-[#4CAF50]" />
+                <span className="text-2xl">📊</span>
               </div>
-              <h3 className="font-display text-lg font-bold text-[#1B3A1F] mb-2">AI Nutrition Analysis</h3>
+              <h3 className="font-display text-lg font-bold text-[#1B3A1F] mb-2">Nutrition Information</h3>
               <p className="text-xs text-[#5C7A61] leading-relaxed">
-                Add your ingredients, then click<br/>
-                <strong className="text-[#4CAF50]">"{t('analyzeNutrition')}"</strong><br/>
-                to get calories, macros, vitamins & minerals!
+                Click <strong className="text-[#4CAF50]">"+ Add Nutrition Info"</strong><br/>
+                to enter calories, macros, and other<br/>
+                nutritional details for your recipe.
               </p>
             </div>
           )}

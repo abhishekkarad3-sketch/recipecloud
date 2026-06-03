@@ -13,87 +13,20 @@ export interface NutritionData {
   healthTip: string;
 }
 
-export async function analyzeNutrition(
-  ingredients: string[],
-  recipeName: string
-): Promise<NutritionData> {
-  const prompt = `You are a professional nutritionist. Analyze these ingredients for the recipe "${recipeName}" and return ONLY valid JSON, no markdown, no explanation.
-
-Ingredients:
-${ingredients.map((i, idx) => `${idx + 1}. ${i}`).join('\n')}
-
-Return this exact JSON structure (numbers only, no units in number fields):
-{
-  "calories": <total kcal for whole recipe>,
-  "protein": <grams>,
-  "fat": <grams>,
-  "carbs": <grams>,
-  "sugar": <grams>,
-  "fiber": <grams>,
-  "sodium": <milligrams>,
-  "servings": <estimated servings>,
-  "vitamins": [
-    {"name": "Vitamin C", "amount": "24mg"},
-    {"name": "Vitamin A", "amount": "120mcg"},
-    {"name": "Vitamin D", "amount": "2mcg"},
-    {"name": "Vitamin B12", "amount": "0.5mcg"}
-  ],
-  "minerals": [
-    {"name": "Iron", "amount": "3mg"},
-    {"name": "Calcium", "amount": "150mg"},
-    {"name": "Potassium", "amount": "420mg"}
-  ],
-  "healthScore": <1-10 integer>,
-  "healthTip": "<one short helpful tip about this recipe's nutrition>"
-}`;
-
-  try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      }),
-    });
-
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    // Strip any accidental markdown fences
-    const clean = text.replace(/```json|```/gi, '').trim();
-    return JSON.parse(clean) as NutritionData;
-  } catch (err) {
-    console.error('Nutrition analysis failed:', err);
-    // Fallback: estimated values
-    return buildFallback(ingredients, recipeName);
-  }
-}
-
-// Rough offline fallback if API fails
-function buildFallback(ingredients: string[], _name: string): NutritionData {
-  const count = ingredients.length;
+// Create empty nutrition data with default values
+export function createEmptyNutrition(): NutritionData {
   return {
-    calories: count * 45 + Math.round(Math.random() * 80),
-    protein:  Math.round(count * 2.5),
-    fat:      Math.round(count * 1.8),
-    carbs:    Math.round(count * 8),
-    sugar:    Math.round(count * 1.5),
-    fiber:    Math.round(count * 0.8),
-    sodium:   Math.round(count * 60),
-    servings: 4,
-    vitamins: [
-      { name: 'Vitamin C', amount: '18mg' },
-      { name: 'Vitamin A', amount: '95mcg' },
-      { name: 'Vitamin B6', amount: '0.3mg' },
-    ],
-    minerals: [
-      { name: 'Iron',      amount: '2mg'   },
-      { name: 'Calcium',   amount: '80mg'  },
-      { name: 'Potassium', amount: '310mg' },
-    ],
-    healthScore: 6,
-    healthTip: 'Add more vegetables to boost fiber and vitamins.',
+    calories: 0,
+    protein: 0,
+    fat: 0,
+    carbs: 0,
+    sugar: 0,
+    fiber: 0,
+    sodium: 0,
+    servings: 1,
+    vitamins: [],
+    minerals: [],
+    healthScore: 5,
+    healthTip: '',
   };
 }
