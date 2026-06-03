@@ -16,7 +16,7 @@ const DIFF: Record<string, string> = {
   Hard:   'bg-red-100     text-red-600     dark:bg-red-900/30     dark:text-red-400',
 };
 
-export default function RecipeCard({ recipe, size = 'md', onViewDetails }: Props) {
+export default function RecipeCard({ recipe, size = 'md', onViewDetails, onViewUser }: Props) {
   const { user, appUser, refreshUser } = useAuth();
   const { t } = useLang();
   const [showStars, setShowStars] = useState(false);
