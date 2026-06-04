@@ -36,8 +36,10 @@ export default function UserProfileModal({ user, onClose }: Props) {
         ratingTotal: d.rating_total,
         ratingCount: d.rating_count,
         usersWhoRated: d.users_who_rated || [],
+        comments: d.comments || [],
         nutrition: d.nutrition,
         dietaryType: d.dietary_type || 'veg',
+        updatedAt: d.updated_at,
       })));
       setLoading(false);
     });
