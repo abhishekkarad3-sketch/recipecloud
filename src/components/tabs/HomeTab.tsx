@@ -17,14 +17,22 @@ const STATS = [
   { icon: TrendingUp, label: 'This Week', value: '+124', color: 'text-[#2E7D32]' },
 ];
 
+const DIET_FILTERS = [
+  { value: 'all',     label: 'All',     emoji: '🍽️' },
+  { value: 'veg',     label: 'Veg',     emoji: '🥗' },
+  { value: 'non-veg', label: 'Non-Veg', emoji: '🍗' },
+  { value: 'vegan',   label: 'Vegan',   emoji: '🌱' },
+];
+
 interface Props { setTab: (t: TabId) => void; onViewUser?: (user: AppUser) => void; }
 
 export default function HomeTab({ setTab, onViewUser }: Props) {
   const { user, signInWithGoogle } = useAuth();
   const { t } = useLang();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recipes, setRecipes]               = useState<Recipe[]>([]);
+  const [loading, setLoading]               = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [dietFilter, setDietFilter]         = useState<'all' | 'veg' | 'non-veg' | 'vegan'>('all');
 
   useEffect(() => {
     const unsub = subscribeToRecipes(data => {
@@ -34,19 +42,21 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
     return unsub;
   }, []);
 
-  const featured = recipes.slice(0, 6);
+  const featured = recipes
+    .filter(r => dietFilter === 'all' || r.dietaryType === dietFilter)
+    .slice(0, 6);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
 
       {/* HERO */}
-      <section className="relative overflow-hidden 
-        bg-white dark:bg-[#1B2A1F] 
-        rounded-[2rem] 
-        border border-[#E8F5E9] dark:border-[#2E7D32] 
+      <section className="relative overflow-hidden
+        bg-white dark:bg-[#1B2A1F]
+        rounded-[2rem]
+        border border-[#E8F5E9] dark:border-[#2E7D32]
         shadow-xl shadow-green-900/5 anim-up">
 
-        {/* 🌿 FLOATING EMOJIS BACKGROUND */}
+        {/* FLOATING EMOJIS */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {['🥑','🍅','🥦','🌽','🫐','🍋'].map((e, i) => (
             <span
@@ -69,7 +79,7 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
             {t('tagline')}
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black 
+          <h1 className="text-4xl sm:text-6xl font-black
             text-[#1B3A1F] dark:text-[#E0F2E9] mb-6 leading-tight">
             {t('appName')}
           </h1>
@@ -88,18 +98,18 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
             {!user ? (
               <button
                 onClick={signInWithGoogle}
-                className="bg-white dark:bg-[#243526] 
+                className="bg-white dark:bg-[#243526]
                 border-2 border-[#E8F5E9] dark:border-[#2E7D32]
-                text-[#2E7D32] dark:text-[#A5D6A7] 
+                text-[#2E7D32] dark:text-[#A5D6A7]
                 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                 {t('joinFree')}
               </button>
             ) : (
               <button
                 onClick={() => setTab('upload')}
-                className="bg-white dark:bg-[#243526] 
+                className="bg-white dark:bg-[#243526]
                 border-2 border-[#E8F5E9] dark:border-[#2E7D32]
-                text-[#2E7D32] dark:text-[#A5D6A7] 
+                text-[#2E7D32] dark:text-[#A5D6A7]
                 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                 {t('uploadRecipe')}
               </button>
@@ -108,13 +118,11 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-t 
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-t
           border-[#E8F5E9] dark:border-[#2E7D32] bg-gray-50/50 dark:bg-black/10">
-
           {STATS.map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="text-center py-6 
+            <div key={label} className="text-center py-6
               border-r border-[#E8F5E9] dark:border-[#2E7D32] last:border-0">
-
               <div className="flex justify-center mb-1">
                 <Icon size={20} className={color} />
               </div>
@@ -129,13 +137,34 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
 
       {/* FEATURED */}
       <section className="anim-up d-1">
-        <div className="flex items-center justify-between mb-8">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-black text-[#1B3A1F] dark:text-[#E0F2E9]">
             {t('featuredRecipes')}
           </h2>
-          <button onClick={() => setTab('search')} className="text-[#2E7D32] dark:text-[#A5D6A7] font-bold flex items-center gap-1 hover:underline">
+          <button
+            onClick={() => setTab('search')}
+            className="text-[#2E7D32] dark:text-[#A5D6A7] font-bold flex items-center gap-1 hover:underline">
             {t('viewAll')} <ArrowRight size={16} />
           </button>
+        </div>
+
+        {/* 🥗 Dietary Filter Buttons */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {DIET_FILTERS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setDietFilter(opt.value as any)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border ${
+                dietFilter === opt.value
+                  ? 'bg-[#4CAF50] text-white border-[#4CAF50] shadow-md scale-105'
+                  : 'bg-white dark:bg-[#243526] text-[#5C7A61] dark:text-[#9DB5A3] border-[#E8F5E9] dark:border-[#2E7D32] hover:border-[#4CAF50] hover:text-[#2E7D32]'
+              }`}
+            >
+              {opt.emoji} {opt.label}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -145,19 +174,26 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
             ))}
           </div>
         ) : featured.length === 0 ? (
-          <div className="text-center py-20 
-            bg-white dark:bg-[#1B2A1F] 
-            border-2 border-dashed border-[#E8F5E9] dark:border-[#2E7D32] 
+          <div className="text-center py-20
+            bg-white dark:bg-[#1B2A1F]
+            border-2 border-dashed border-[#E8F5E9] dark:border-[#2E7D32]
             rounded-[2rem]">
-
-            <div className="text-5xl mb-4">🍳</div>
+            <div className="text-5xl mb-4">
+              {dietFilter === 'veg' ? '🥗' : dietFilter === 'non-veg' ? '🍗' : dietFilter === 'vegan' ? '🌱' : '🍳'}
+            </div>
             <p className="text-lg font-medium text-[#5C7A61] dark:text-[#9DB5A3]">
-              {t('noRecipes')}
+              {dietFilter === 'all' ? t('noRecipes') : `No ${dietFilter} recipes found`}
             </p>
-
+            {dietFilter !== 'all' && (
+              <button
+                onClick={() => setDietFilter('all')}
+                className="mt-4 px-6 py-2 rounded-full border border-[#4CAF50] text-[#4CAF50] text-sm font-bold hover:bg-[#F1F8F4] transition-colors">
+                Show All Recipes
+              </button>
+            )}
             <button
               onClick={() => setTab('upload')}
-              className="mt-6 green-gradient text-white px-8 py-3 rounded-xl font-bold">
+              className="mt-4 ml-2 green-gradient text-white px-8 py-3 rounded-xl font-bold">
               {t('uploadRecipe')}
             </button>
           </div>
@@ -179,7 +215,6 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
         <h2 className="text-3xl font-black text-[#1B3A1F] dark:text-[#E0F2E9] mb-8">
           {t('browseCategories')}
         </h2>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
           {[
             { e: '🍳', l: 'Breakfast' },
@@ -192,8 +227,8 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
             { e: '🍩', l: 'Snacks' }
           ].map((c, i) => (
             <button key={i}
-              className="bg-white dark:bg-[#243526] 
-              border border-[#E8F5E9] dark:border-[#2E7D32] 
+              className="bg-white dark:bg-[#243526]
+              border border-[#E8F5E9] dark:border-[#2E7D32]
               rounded-2xl p-6 flex flex-col items-center gap-3
               hover:border-[#4CAF50] hover:shadow-lg hover:shadow-green-900/10 transition-all group">
               <span className="text-3xl group-hover:scale-110 transition-transform">{c.e}</span>
@@ -218,4 +253,4 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
 
     </div>
   );
-}
+      }
