@@ -6,29 +6,35 @@ import RecipeDetailModal from '@/components/RecipeDetailModal';
 import { useLang } from '@/context/LangContext';
 import { Recipe, subscribeToRecipes, CATEGORIES } from '@/services/recipes';
 import { AppUser, searchUsers } from '@/services/users';
-// import UserProfileModal from '@/components/UserProfileModal';
 import Image from 'next/image';
 import { User } from 'lucide-react';
 
 type Sort = 'newest' | 'top';
 const DIFFS = ['All', 'Easy', 'Medium', 'Hard'];
 
+const DIET_FILTERS = [
+  { value: 'All',     emoji: '🍽️', label: 'All'     },
+  { value: 'veg',     emoji: '🥗', label: 'Veg'     },
+  { value: 'non-veg', emoji: '🍗', label: 'Non-Veg' },
+  { value: 'vegan',   emoji: '🌱', label: 'Vegan'   },
+];
+
 interface Props { onViewUser?: (user: AppUser) => void; }
 
 export default function SearchTab({ onViewUser }: Props) {
   const { t } = useLang();
-  const [all, setAll]           = useState<Recipe[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [query, setQuery]       = useState('');
-  const [category, setCategory] = useState('All');
-  const [diff, setDiff]         = useState('All');
-  const [maxTime, setMaxTime]   = useState(120);
-  const [sort, setSort]         = useState<Sort>('newest');
+  const [all, setAll]               = useState<Recipe[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [query, setQuery]           = useState('');
+  const [category, setCategory]     = useState('All');
+  const [diff, setDiff]             = useState('All');
+  const [diet, setDiet]             = useState('All');
+  const [maxTime, setMaxTime]       = useState(120);
+  const [sort, setSort]             = useState<Sort>('newest');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [users, setUsers] = useState<AppUser[]>([]);
+  const [users, setUsers]           = useState<AppUser[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
-  // const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToRecipes(data => { setAll(data); setLoading(false); });
@@ -59,6 +65,7 @@ export default function SearchTab({ onViewUser }: Props) {
     }
     if (category !== 'All') list = list.filter(r => r.category === category);
     if (diff     !== 'All') list = list.filter(r => r.difficulty === diff);
+    if (diet     !== 'All') list = list.filter(r => r.dietaryType === diet);
     list = list.filter(r => r.cookingTime <= maxTime);
     if (sort === 'top') {
       list.sort((a, b) => {
@@ -68,7 +75,7 @@ export default function SearchTab({ onViewUser }: Props) {
       });
     }
     return list;
-  }, [all, query, category, diff, maxTime, sort]);
+  }, [all, query, category, diff, diet, maxTime, sort]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
@@ -102,6 +109,7 @@ export default function SearchTab({ onViewUser }: Props) {
       {/* Filter panel */}
       {showFilter && (
         <div className="bg-white rounded-2xl border border-[#E8F5E9] p-5 space-y-5 anim-scale shadow-sm">
+
           {/* Category chips */}
           <div>
             <label className="text-xs font-semibold text-[#2E7D32] uppercase tracking-wide mb-2 block">Category</label>
@@ -133,6 +141,26 @@ export default function SearchTab({ onViewUser }: Props) {
                   }`}
                 >
                   {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 🥗 Diet Type Filter */}
+          <div>
+            <label className="text-xs font-semibold text-[#2E7D32] uppercase tracking-wide mb-2 block">Diet Type</label>
+            <div className="flex flex-wrap gap-2">
+              {DIET_FILTERS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDiet(opt.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    diet === opt.value
+                      ? 'bg-[#4CAF50] text-white border-[#4CAF50]'
+                      : 'bg-white text-[#5C7A61] border-[#C8E6C9] hover:border-[#4CAF50]'
+                  }`}
+                >
+                  {opt.emoji} {opt.label}
                 </button>
               ))}
             </div>
@@ -176,7 +204,7 @@ export default function SearchTab({ onViewUser }: Props) {
           </h2>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {users.map(u => (
-              <button 
+              <button
                 key={u.uid}
                 onClick={() => onViewUser?.(u)}
                 className="flex-shrink-0 flex items-center gap-3 bg-white border border-[#E8F5E9] rounded-2xl p-3 hover:border-[#4CAF50] transition-all shadow-sm"
@@ -226,7 +254,8 @@ export default function SearchTab({ onViewUser }: Props) {
           <Search size={40} className="text-[#A5D6A7] mx-auto mb-3" />
           <h3 className="font-display text-xl font-bold text-[#1B3A1F] mb-2">Nothing found</h3>
           <p className="text-sm text-[#5C7A61]">Try a different search or reset filters</p>
-          <button onClick={() => { setQuery(''); setCategory('All'); setDiff('All'); setMaxTime(120); }}
+          <button
+            onClick={() => { setQuery(''); setCategory('All'); setDiff('All'); setDiet('All'); setMaxTime(120); }}
             className="mt-4 text-sm text-[#4CAF50] font-semibold hover:underline">
             Clear filters
           </button>
@@ -245,9 +274,6 @@ export default function SearchTab({ onViewUser }: Props) {
         <RecipeDetailModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
       )}
 
-      {/* {selectedUser && (
-        <UserProfileModal user={selectedUser} onClose={() => setSelectedUser(null)} />
-      )} */}
     </div>
   );
-}
+          }
