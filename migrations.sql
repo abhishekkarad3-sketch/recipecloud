@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     photo_url text,
     points integer DEFAULT 0,
     favorites text[] DEFAULT '{}'::text[],
+    bookmarks text[] DEFAULT '{}'::text[],
     created_at timestamp with time zone DEFAULT now()
 );
 
@@ -85,3 +86,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE INDEX IF NOT EXISTS users_id_idx ON public.users (id);
 CREATE INDEX IF NOT EXISTS recipes_id_idx ON public.recipes (id);
 CREATE INDEX IF NOT EXISTS recipes_author_id_idx ON public.recipes (author_id);
+
+-- Add bookmarks column to users table if it doesn't exist (for existing databases)
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS bookmarks text[] DEFAULT '{}'::text[];
