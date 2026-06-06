@@ -1,0 +1,23 @@
+$ next dev -p 4028
+   ▲ Next.js 15.1.11
+   - Local:        http://localhost:4028
+   - Network:      http://169.254.0.21:4028
+   - Environments: .env.local
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 1641ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.1s (935 modules)
+ GET / 200 in 8071ms
+ ✓ Compiled in 594ms (470 modules)
+ HEAD / 200 in 32ms
+ GET / 200 in 27ms
+ GET / 200 in 29ms
+ ✓ Compiled in 887ms (935 modules)
+ ✓ Compiled in 1302ms (935 modules)
+ GET / 200 in 262ms

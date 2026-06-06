@@ -1,20 +1,21 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen, X, Plus } from 'lucide-react';
+import { ChefHat, Trash2, Star, Clock, Heart, Trophy, BookOpen, X, Plus, Bookmark } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
 import { getRecipesByAuthor, deleteRecipe, Recipe, avgRating, updateRecipe, uploadRecipeImage, CATEGORIES } from '@/services/recipes';
 import NutritionPanel from '@/components/NutritionPanel';
 import { parseLinksInText } from '@/utils/linkParser';
 
-type Tab = 'recipes' | 'favorites';
+type Tab = 'recipes' | 'favorites' | 'bookmarks';
 
 export default function ProfileTab() {
   const { user, appUser, refreshUser, signInWithGoogle } = useAuth();
   const { t } = useLang();
   const [myRecipes, setMyRecipes] = useState<Recipe[]>([]);
   const [tab, setTab] = useState<Tab>('recipes');
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<string|null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -37,6 +38,24 @@ export default function ProfileTab() {
     setLoading(true);
     getRecipesByAuthor(user.id).then(data => { setMyRecipes(data); setLoading(false); });
   }, [user]);
+
+  useEffect(() => {
+    if (!appUser?.bookmarks || appUser.bookmarks.length === 0) {
+      setBookmarkedRecipes([]);
+      return;
+    }
+    // Fetch bookmarked recipes
+    const fetchBookmarkedRecipes = async () => {
+      const { getRecipe } = await import('@/services/recipes');
+      const recipes: Recipe[] = [];
+      for (const recipeId of appUser.bookmarks) {
+        const recipe = await getRecipe(recipeId);
+        if (recipe) recipes.push(recipe);
+      }
+      setBookmarkedRecipes(recipes);
+    };
+    fetchBookmarkedRecipes();
+  }, [appUser?.bookmarks]);
 
   useEffect(() => {
     if (appUser && isEditingProfile) {
@@ -383,6 +402,7 @@ export default function ProfileTab() {
       {/* Tabs */}
       <div className="flex bg-white border border-[#E8F5E9] rounded-2xl overflow-hidden shadow-sm">
         {([['recipes', BookOpen, `${t('myRecipes')} (${myRecipes.length})`],
+           ['bookmarks', Bookmark, `Bookmarks (${appUser.bookmarks?.length ?? 0})`],
            ['favorites', Heart, `${t('favorites')} (${favCount})`]] as const).map(([id, Icon, label]) => (
           <button key={id} onClick={() => setTab(id as Tab)}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
@@ -580,6 +600,42 @@ export default function ProfileTab() {
                     )}
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === 'bookmarks' && (
+        bookmarkedRecipes.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#E8F5E9]">
+            <Bookmark size={40} className="text-[#A5D6A7] mx-auto mb-3"/>
+            <p className="text-[#5C7A61] text-sm">No bookmarks yet. Bookmark recipes to save them for later!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {bookmarkedRecipes.map(recipe => (
+              <div key={recipe.id} className="bg-white rounded-2xl border border-[#E8F5E9] shadow-sm overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative h-40 bg-[#F1F8F4] overflow-hidden">
+                  {recipe.imageUrl ? (
+                    <Image src={recipe.imageUrl} alt={recipe.name} fill className="object-cover" unoptimized />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"><ChefHat size={32} className="text-[#A5D6A7]"/></div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-[#1B3A1F] truncate mb-2">{recipe.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-[#5C7A61] mb-3">
+                    <Clock size={12}/>{recipe.cookingTime}m
+                    <span className="bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded-full font-medium">{recipe.category}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg flex items-center gap-1">
+                      <Star size={10} className="fill-amber-400"/>{avgRating(recipe)||'—'}
+                    </span>
+                    <button onClick={() => setBookmarkedRecipes(prev => prev.filter(r => r.id !== recipe.id))} className="text-xs font-semibold text-[#4CAF50] hover:text-red-500 transition-colors">Remove</button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

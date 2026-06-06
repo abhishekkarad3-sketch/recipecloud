@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Clock, Star, Heart, ChefHat, Flame, User } from 'lucide-react';
+import { Clock, Star, Heart, ChefHat, Flame, User, Bookmark } from 'lucide-react';
 import { Recipe, avgRating, rateRecipe } from '@/services/recipes';
-import { toggleFavorite, getUser, AppUser } from '@/services/users';
+import { toggleFavorite, toggleBookmark, getUser, AppUser } from '@/services/users';
 // import UserProfileModal from '@/components/UserProfileModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
@@ -25,6 +25,7 @@ export default function RecipeCard({ recipe, size = 'md', onViewDetails, onViewU
   const [selectedAuthor, setSelectedAuthor] = useState<AppUser | null>(null);
 
   const isFav   = appUser?.favorites?.includes(recipe.id!) ?? false;
+  const isBookmarked = appUser?.bookmarks?.includes(recipe.id!) ?? false;
   const hasRated = user ? recipe.usersWhoRated?.includes(user.id) ?? false : false;
   const avg      = avgRating(recipe);
   const imgH     = size === 'sm' ? 'h-40' : 'h-52';
@@ -33,6 +34,13 @@ export default function RecipeCard({ recipe, size = 'md', onViewDetails, onViewU
     e.stopPropagation();
     if (!user) return;
     await toggleFavorite(user.id, recipe.id!, isFav);
+    await refreshUser();
+  };
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    await toggleBookmark(user.id, recipe.id!, isBookmarked);
     await refreshUser();
   };
 
@@ -87,16 +95,29 @@ export default function RecipeCard({ recipe, size = 'md', onViewDetails, onViewU
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Fav */}
-        <button 
-          onClick={handleFav} 
-          className="absolute top-3 right-3 w-9 h-9 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-10"
-        >
-          <Heart 
-            size={18} 
-            className={isFav ? 'fill-red-500 stroke-red-500' : 'stroke-gray-600 dark:stroke-white/70'} 
-          />
-        </button>
+        {/* Fav and Bookmark */}
+        <div className="absolute top-3 right-3 flex gap-2 z-10">
+          <button 
+            onClick={handleBookmark} 
+            className="w-9 h-9 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+            title="Bookmark recipe"
+          >
+            <Bookmark 
+              size={18} 
+              className={isBookmarked ? 'fill-amber-500 stroke-amber-500' : 'stroke-gray-600 dark:stroke-white/70'} 
+            />
+          </button>
+          <button 
+            onClick={handleFav} 
+            className="w-9 h-9 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+            title="Add to favorites"
+          >
+            <Heart 
+              size={18} 
+              className={isFav ? 'fill-red-500 stroke-red-500' : 'stroke-gray-600 dark:stroke-white/70'} 
+            />
+          </button>
+        </div>
 
         {/* Category tag */}
         <div className="absolute bottom-3 left-3 bg-[#2E7D32] text-white text-[10px] font-bold px-3 py-1 rounded-lg shadow-lg uppercase tracking-wider">
