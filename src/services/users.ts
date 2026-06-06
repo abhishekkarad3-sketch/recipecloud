@@ -7,6 +7,7 @@ export interface AppUser {
   photoURL: string;
   points: number;
   favorites: string[];
+  bookmarks?: string[];
   createdAt?: string;
   gender?: string;
   bio?: string;
@@ -29,6 +30,7 @@ export async function upsertUser(user: Omit<AppUser, 'points' | 'favorites'>): P
       photo_url: user.photoURL,
       points: 0,
       favorites: [],
+      bookmarks: [],
       created_at: new Date().toISOString(),
       gender: user.gender || null,
       bio: user.bio || null,
@@ -67,6 +69,7 @@ export async function getUser(uid: string): Promise<AppUser | null> {
     photoURL: data.photo_url,
     points: data.points,
     favorites: data.favorites || [],
+    bookmarks: data.bookmarks || [],
     createdAt: data.created_at,
     gender: data.gender,
     bio: data.bio,
@@ -108,6 +111,31 @@ export async function toggleFavorite(uid: string, recipeId: string, isFav: boole
   await supabase
     .from('users')
     .update({ favorites: newFavorites })
+    .eq('id', uid);
+}
+
+// Toggle bookmark
+export async function toggleBookmark(uid: string, recipeId: string, isBookmarked: boolean): Promise<void> {
+  const { data: user } = await supabase
+    .from('users')
+    .select('bookmarks')
+    .eq('id', uid)
+    .single();
+
+  if (!user) return;
+
+  let newBookmarks = user.bookmarks || [];
+  if (isBookmarked) {
+    newBookmarks = newBookmarks.filter((id: string) => id !== recipeId);
+  } else {
+    if (!newBookmarks.includes(recipeId)) {
+      newBookmarks.push(recipeId);
+    }
+  }
+
+  await supabase
+    .from('users')
+    .update({ bookmarks: newBookmarks })
     .eq('id', uid);
 }
 
@@ -168,6 +196,7 @@ function mapUser(d: any): AppUser {
     photoURL: d.photo_url,
     points: d.points,
     favorites: d.favorites || [],
+    bookmarks: d.bookmarks || [],
     createdAt: d.created_at,
     gender: d.gender,
     bio: d.bio,

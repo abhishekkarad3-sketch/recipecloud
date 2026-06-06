@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { X, Clock, Star, Heart, ChefHat, Flame, Leaf, AlertCircle, MessageSquare, Send, User, Trash2, Download } from 'lucide-react';
+import { X, Clock, Star, Heart, ChefHat, Flame, Leaf, AlertCircle, MessageSquare, Send, User, Trash2, Download, Share2, Printer, Bookmark } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 import { Recipe, avgRating, rateRecipe, deleteReview } from '@/services/recipes';
-import { toggleFavorite, getUser, AppUser } from '@/services/users';
+import { toggleFavorite, toggleBookmark, getUser, AppUser } from '@/services/users';
 import UserProfileModal from '@/components/UserProfileModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLang } from '@/context/LangContext';
@@ -38,9 +38,12 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
   const [isDeletingReview, setIsDeletingReview] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<AppUser | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const recipeRef = React.useRef<HTMLDivElement>(null);
 
   const isFav = appUser?.favorites?.includes(recipe.id!) ?? false;
+  const isBookmarkedByUser = appUser?.bookmarks?.includes(recipe.id!) ?? false;
   const userRating = recipe.comments?.find(c => c.userId === user?.id);
   const hasRated = !!userRating;
   const avg = avgRating(recipe);
@@ -128,6 +131,67 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
     }
   };
 
+  const handlePrintRecipe = () => {
+    if (!recipeRef.current) return;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>' + recipe.name + '</title>');
+      printWindow.document.write('<style>');
+      printWindow.document.write('body { font-family: Arial, sans-serif; margin: 20px; }');
+      printWindow.document.write('h1 { color: #1B3A1F; }');
+      printWindow.document.write('.recipe-section { margin: 20px 0; }');
+      printWindow.document.write('.recipe-section h2 { color: #4CAF50; font-size: 16px; }');
+      printWindow.document.write('ul { list-style-type: none; padding-left: 0; }');
+      printWindow.document.write('li { margin: 8px 0; }');
+      printWindow.document.write('</style></head><body>');
+      printWindow.document.write('<h1>' + recipe.name + '</h1>');
+      printWindow.document.write('<div class="recipe-section"><h2>Difficulty:</h2><p>' + recipe.difficulty + '</p></div>');
+      printWindow.document.write('<div class="recipe-section"><h2>Cooking Time:</h2><p>' + recipe.cookingTime + ' minutes</p></div>');
+      printWindow.document.write('<div class="recipe-section"><h2>Category:</h2><p>' + recipe.category + '</p></div>');
+      printWindow.document.write('<div class="recipe-section"><h2>Ingredients:</h2><ul>');
+      recipe.ingredients.forEach((ing: string) => {
+        printWindow.document.write('<li>• ' + ing + '</li>');
+      });
+      printWindow.document.write('</ul></div>');
+      printWindow.document.write('<div class="recipe-section"><h2>Instructions:</h2><p>' + recipe.instructions.replace(/\n/g, '<br>') + '</p></div>');
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleShareRecipe = (platform: string) => {
+    const recipeUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/recipe/${recipe.id}`;
+    const recipeText = `Check out this amazing recipe: ${recipe.name}!`;
+    
+    switch (platform) {
+      case 'copy':
+        navigator.clipboard.writeText(recipeUrl);
+        alert('Recipe link copied to clipboard!');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(recipeText + ' ' + recipeUrl)}`, '_blank');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(recipeText)}&url=${encodeURIComponent(recipeUrl)}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(recipeUrl)}`, '_blank');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent('Check out this recipe: ' + recipe.name)}&body=${encodeURIComponent(recipeText + ' ' + recipeUrl)}`;
+        break;
+    }
+    setShowShareMenu(false);
+  };
+
+  const handleBookmarkRecipe = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    await toggleBookmark(user.id, recipe.id!, isBookmarkedByUser);
+    await refreshUser();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#1B2A1F] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"><div ref={recipeRef} className="bg-white dark:bg-[#1B2A1F]">
@@ -152,7 +216,7 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Close and Download buttons */}
+          {/* Close, Download, Print, Share, and Bookmark buttons */}
           <div className="absolute top-4 right-4 flex gap-2 z-10">
             <button 
               onClick={handleDownloadRecipe}
@@ -161,6 +225,41 @@ export default function RecipeDetailModal({ recipe, onClose }: Props) {
               title="Download recipe as image"
             >
               <Download size={20} className="text-[#1B3A1F] dark:text-white" />
+            </button>
+            <button 
+              onClick={handlePrintRecipe}
+              className="w-10 h-10 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+              title="Print recipe"
+            >
+              <Printer size={20} className="text-[#1B3A1F] dark:text-white" />
+            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowShareMenu(!showShareMenu)}
+                className="w-10 h-10 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+                title="Share recipe"
+              >
+                <Share2 size={20} className="text-[#1B3A1F] dark:text-white" />
+              </button>
+              {showShareMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#2E3D2F] rounded-lg shadow-xl z-20 border border-[#E8F5E9] dark:border-[#4CAF50]/30">
+                  <button onClick={() => handleShareRecipe('copy')} className="w-full text-left px-4 py-2 hover:bg-[#F1F8F4] dark:hover:bg-[#384d3a] text-sm text-[#1B3A1F] dark:text-[#E0F2E9]">📋 Copy Link</button>
+                  <button onClick={() => handleShareRecipe('whatsapp')} className="w-full text-left px-4 py-2 hover:bg-[#F1F8F4] dark:hover:bg-[#384d3a] text-sm text-[#1B3A1F] dark:text-[#E0F2E9]">💬 WhatsApp</button>
+                  <button onClick={() => handleShareRecipe('twitter')} className="w-full text-left px-4 py-2 hover:bg-[#F1F8F4] dark:hover:bg-[#384d3a] text-sm text-[#1B3A1F] dark:text-[#E0F2E9]">𝕏 Twitter</button>
+                  <button onClick={() => handleShareRecipe('facebook')} className="w-full text-left px-4 py-2 hover:bg-[#F1F8F4] dark:hover:bg-[#384d3a] text-sm text-[#1B3A1F] dark:text-[#E0F2E9]">f Facebook</button>
+                  <button onClick={() => handleShareRecipe('email')} className="w-full text-left px-4 py-2 hover:bg-[#F1F8F4] dark:hover:bg-[#384d3a] text-sm text-[#1B3A1F] dark:text-[#E0F2E9]">✉️ Email</button>
+                </div>
+              )}
+            </div>
+            <button 
+              onClick={handleBookmarkRecipe}
+              className="w-10 h-10 bg-white/90 dark:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all"
+              title="Bookmark recipe"
+            >
+              <Bookmark 
+                size={20} 
+                className={isBookmarkedByUser ? 'fill-amber-500 stroke-amber-500' : 'stroke-gray-600 dark:stroke-white/70'} 
+              />
             </button>
             <button 
               onClick={onClose}
