@@ -46,6 +46,15 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
     .filter(r => dietFilter === 'all' || r.dietaryType === dietFilter)
     .slice(0, 6);
 
+  const trending = recipes
+    .filter(r => r.ratingCount > 0)
+    .sort((a, b) => {
+      const aAvg = a.ratingTotal / a.ratingCount;
+      const bAvg = b.ratingTotal / b.ratingCount;
+      return bAvg - aAvg;
+    })
+    .slice(0, 3);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
 
@@ -208,6 +217,25 @@ export default function HomeTab({ setTab, onViewUser }: Props) {
 
       {selectedRecipe && (
         <RecipeDetailModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+      )}
+
+      {/* TRENDING RECIPES */}
+      {trending.length > 0 && (
+        <section className="anim-up d-2">
+          <h2 className="text-3xl font-black text-[#1B3A1F] dark:text-[#E0F2E9] mb-8">
+            ⭐ Trending Now
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trending.map((r, idx) => (
+              <div key={r.id} className="relative">
+                <div className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 z-10 shadow-lg">
+                  #{idx + 1} Top Rated
+                </div>
+                <RecipeCard recipe={r} onViewDetails={setSelectedRecipe} onViewUser={onViewUser} />
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* CATEGORIES */}
