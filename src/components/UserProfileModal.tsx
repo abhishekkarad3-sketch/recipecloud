@@ -18,6 +18,8 @@ export default function UserProfileModal({ user, onClose }: Props) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [recipesPerPage] = useState(6);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     getUserRecipes(user.uid).then(data => {
@@ -111,10 +113,35 @@ export default function UserProfileModal({ user, onClose }: Props) {
                 <p className="text-[#5C7A61] dark:text-[#9DB5A3]">No recipes uploaded yet.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {recipes.map(r => (
-                  <RecipeCard key={r.id} recipe={r} onViewDetails={setSelectedRecipe} />
-                ))}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {recipes
+                    .slice((currentPage - 1) * recipesPerPage, currentPage * recipesPerPage)
+                    .map(r => (
+                      <RecipeCard key={r.id} recipe={r} onViewDetails={setSelectedRecipe} />
+                    ))}
+                </div>
+                {recipes.length > recipesPerPage && (
+                  <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-[#E8F5E9] dark:border-[#2E7D32]">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg bg-white dark:bg-[#1B2A1F] border border-[#E8F5E9] dark:border-[#2E7D32] text-[#2E7D32] dark:text-[#A5D6A7] font-bold disabled:opacity-50 hover:bg-[#F1F8F4] dark:hover:bg-[#2E3D2F] transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm font-bold text-[#5C7A61] dark:text-[#9DB5A3]">
+                      Page {currentPage} of {Math.ceil(recipes.length / recipesPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(recipes.length / recipesPerPage), p + 1))}
+                      disabled={currentPage === Math.ceil(recipes.length / recipesPerPage)}
+                      className="px-4 py-2 rounded-lg bg-white dark:bg-[#1B2A1F] border border-[#E8F5E9] dark:border-[#2E7D32] text-[#2E7D32] dark:text-[#A5D6A7] font-bold disabled:opacity-50 hover:bg-[#F1F8F4] dark:hover:bg-[#2E3D2F] transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
